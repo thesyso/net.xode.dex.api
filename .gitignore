@@ -1,0 +1,12 @@
+# secure
+secure/
+
+# dependencies
+logs/
+node_modules/
+.env
+
+# testing
+
+# build
+dist/
