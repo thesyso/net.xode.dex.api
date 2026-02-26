@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ESNext",
+    "lib": ["ES2020", "DOM"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "outDir": "./dist",

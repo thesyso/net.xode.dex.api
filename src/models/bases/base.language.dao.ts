@@ -11,10 +11,8 @@ const etList = async (conn: any, params: any) => {
   var sr = params.sr ? params.sr : 0;
   var srTxt = params.srTxt?.length > 0 ? `%` + params.srTxt + `%` : "";
 
-  var srBeginDate = new Date(
-    !isNaN(params.srBeginDate) ? params.srBeginDate : "",
-  );
-  var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : "");
+  var srBeginDate = new Date(!isNaN(params.srBeginDate) ? params.srBeginDate : null);
+  var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
 
   //
   var srUsed = params.srUsed ? params.srUsed : "";
@@ -47,11 +45,11 @@ const etList = async (conn: any, params: any) => {
   }
 
   // search date
-  if (srBeginDate) {
+  if (!isNaN(srBeginDate.getTime())) {
     vParams.push(srBeginDate);
     vQuery = vQuery + ` AND bl.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
-  if (srEndDate) {
+  if (!isNaN(srEndDate.getTime())) {
     vParams.push(srEndDate);
     vQuery =
       vQuery +
@@ -59,6 +57,7 @@ const etList = async (conn: any, params: any) => {
   }
 
   vQuery = vQuery + ` ORDER BY bl.language_code ASC `;
+  console.log("daoBaseLanguage etList vQuery", vQuery, vParams);
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
@@ -66,15 +65,76 @@ const etList = async (conn: any, params: any) => {
   return await conn.query(vQuery, vParams);
 };
 // detail
-const etDetail = async (conn: any, language_id: number) => {};
+const etDetail = async (conn: any, ucode: string) => {
+  var vParams = new Array();
+
+  var vQuery = `
+        SELECT 
+          bl.*
+        FROM base_language bl
+        WHERE bl.language_code = ?
+    `;
+  vParams.push(ucode);
+
+  // console.log("daoBaseLanguage etDetail vQuery", vQuery, vParams);
+  return await conn.query(vQuery, vParams);
+};
 // create
-const etSave = async (conn: any, params: any) => {};
+const etSave = async (conn: any, params: any) => {
+  var vParams = new Array();
+
+  var vQuery = `
+        INSERT INTO base_language (
+          language_code,
+          language_name,
+          is_use
+        ) VALUES (?, ?, ?)
+    `;
+  vParams.push(params.language_code, params.language_name, params.is_use);
+  return await conn.query(vQuery, vParams);
+};
 // update
-const etChange = async (conn: any, params: any) => {};
+const etChange = async (conn: any, params: any) => {
+  var vParams = new Array();
+
+  var vQuery = `
+        UPDATE base_language SET
+          language_name = ?
+        WHERE language_code = ?
+    `;
+  vParams.push(
+    params.language_name,   
+    params.language_code
+  );
+
+  return await conn.query(vQuery, vParams);
+};
 // update
-const etPatch = async (conn: any, params: any) => {};
+// const etPatchName = async (conn: any, params: any) => {
+//   var vParams = new Array();
+
+//   var vQuery = `
+//         UPDATE base_language SET
+//         language_name = ?
+//         WHERE language_code = ?
+//         `;
+
+//   vParams.push(params.language_name, params.language_code);
+
+//   return await conn.query(vQuery, vParams);
+// };
 // delete
-const etRemove = async (conn: any, params: any) => {};
+const etRemove = async (conn: any, ucode: string) => {
+  var vParams = new Array();
+
+  vParams.push(ucode);
+  var vQuery = `
+        UPDATE base_language
+        SET is_use = CASE WHEN is_use = 1 THEN 0 ELSE 1 END
+        WHERE language_code = ?
+  `;
+  return await conn.query(vQuery, vParams);
+};
 
 export default {
   etCount,
@@ -82,6 +142,5 @@ export default {
   etDetail,
   etSave,
   etChange,
-  etPatch,
   etRemove,
 };

@@ -23,6 +23,7 @@ export const moMessage = (
 ) => {
   const timestamp = moment().format("YYYY-MM-DD HH:mm:ss");
   let colorCode: string;
+  let colorEndCode: string = "\x1b[0m"; // Reset
 
   switch (level) {
     case "info":
@@ -37,5 +38,5 @@ export const moMessage = (
     default:
       colorCode = "\x1b[0m"; // Reset
   }
-  console.log(`${colorCode}[${timestamp}] [${name}] [${level.toUpperCase()}] ${message}\x1b[0m`);
+  console.log(`[${timestamp}] [${colorCode}${name}${colorEndCode}] [${colorCode}${level.toUpperCase()}${colorEndCode}] \x1b[0m${message}`);
 };

@@ -1,4 +1,5 @@
 import express, { Request, Response, Router } from 'express';
+import JSONbig from 'json-bigint';
 import 'dotenv/config'; // 로드와 동시에 설정 적용
 
 import { ApiError } from './pages/errors/apiError';
@@ -15,28 +16,13 @@ const app = express();
 app.use(morganLogger);
 app.use(express.json());
 
-// 라우터 연결 (버전 관리를 위해 /api/v1 권장)
-// app.use('/api/users', routes);
-
-// 비동기 라우트 예시
-// app.get('/user/:id', asyncHandler(async (req: Request, res: Response) => {
-//   const { id } = req.params;
-  
-//   // 예시: 유저가 없을 때 404 에러 던지기
-//   if (id === 'admin') {
-//     throw new ApiError(403, '접근 권한이 없습니다.');
-//   }
-
-//   res.send({ id, name: 'John Doe' });
-// }));
-
-// app.get('/', (req: Request, res: Response) => {
-//   res.send(`Server is running in ${process.env.NODE_ENV} mode`);
-// });
-// 404 처리 (라우터에 없는 경로)
-// app.use((req: Request, res: Response) => {
-//   res.status(404).json({ success: false, message: '경로를 찾을 수 없습니다.' });
-// });
+// Express의 기본 res.json 동작을 커스텀 파서로 교체
+app.set('json replacer', (key: string, value: any) => {
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  return value;
+});
 
 // 모든 라우트 등록
 pageRouter(app);
@@ -44,6 +30,5 @@ pageRouter(app);
 app.use(middlewareError);
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running at http://localhost:${PORT}`);
+  console.log(`[\x1b[33mserver\x1b[0m] is running at "\x1b[36mhttp://localhost:${PORT}\x1b[0m"`);
 });
-

@@ -14,19 +14,23 @@ const acList = async (params: any) => {
 
   let conn: any;
   let rowsCount = 0;
-
+  
   try {
     conn = await getPools();
+
     const rows = await daoBaseLanguage.etList(conn, params);
     const rowCount = await daoBaseLanguage.etCount(conn);
 
-    result.success = true;
-    result.message = "";
-    result.data = rows;
-    result.count = rowCount[0]?.count || 0;
+    result = {
+      success: true,
+      message: "",
+      data: rows,
+      count: rowCount[0]?.count || 0,
+    };
+
   } catch (error: any) {
     moMessage(
-      `languageController acList error`,
+      `languageController.acList`,
       error?.message || error,
       "error",
     );
@@ -40,79 +44,162 @@ const acList = async (params: any) => {
   return result;
 };
 
-const acDetail = async () => {
+const acDetail = async (ucode: string) => {
   let result: IResult = {
     success: false,
-    message:
-      "an unknown error has occurred. If this continues, please contact your administrator.",
+    message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 
+  let conn: any;
   let rowsCount = 0;
+
+  try{
+    conn = await getPools();
+
+    const rows = await daoBaseLanguage.etDetail(conn, ucode);
+    const rowCount = await daoBaseLanguage.etCount(conn);
+
+    result.success = true;
+    result.message = "";
+    result.data = rows;
+    result.count = rowCount[0]?.count || 0;
+
+  }catch (error: any) {
+    moMessage(
+      `languageController.acDetail`,  
+      error?.message || error,
+      "error",
+    );
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+
   // default return
-  return {
-    success: true,
-    message: "language detail route is working",
-  };
+  return result;
 };
 
-const acSave = async () => {
+const acSave = async (params: any) => {
   let result: IResult = {
     success: false,
-    message:
-      "an unknown error has occurred. If this continues, please contact your administrator.",
+    message: "an unknown error has occurred. If this continues, please contact your administrator.",
   };
 
-  let rowsCount = 0;
+  let conn: any;
+
+  try {
+    conn = await getPools();
+
+    // Check if the specified language exists before attempting to save
+    const row = await daoBaseLanguage.etDetail(conn, params.language_code);
+    if (row && row.length > 0) {
+      result.message = "The specified language already exists.";
+      return result;
+    }
+
+    const rows = await daoBaseLanguage.etSave(conn, params);
+
+    result.success = true;
+    result.message = "";
+    result.data = rows;
+    result.count = conn.affectedRows || 0;
+
+  } catch (error: any) {
+    moMessage(
+      `languageController.acSave`,
+      error?.message || error,
+      "error",
+    );
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+
   // default return
-  return {
-    success: true,
-    message: "language save route is working",
-  };
+  return result;
 };
 
-const acChange = async () => {
+const acChange = async (params: any) => {
   let result: IResult = {
     success: false,
-    message:
-      "an unknown error has occurred. If this continues, please contact your administrator.",
+    message: "an unknown error has occurred. If this continues, please contact your administrator.",
   };
 
-  let rowsCount = 0;
+  let conn: any;
+
+  try {
+    conn = await getPools();
+
+    // Check if the specified language exists before attempting to delete
+    const row = await daoBaseLanguage.etDetail(conn, params.language_code);
+    if (!row || row.length === 0) {
+      result.message = "The specified language does not exist.";
+      return result;
+    }
+    
+    const rows = await daoBaseLanguage.etChange(conn, params);
+
+    result.success = true;
+    result.message = "";
+    result.data = rows;
+    result.count = conn.affectedRows || 0;
+
+  } catch (error: any) {
+    moMessage(
+      `languageController.acChange`,
+      error?.message || error,
+      "error",
+    );
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+
   // default return
-  return {
-    success: true,
-    message: "language change route is working",
-  };
+  return result;
 };
 
-const acPatch = async () => {
+const acRemove = async (ucode: string) => {
   let result: IResult = {
     success: false,
-    message:
-      "an unknown error has occurred. If this continues, please contact your administrator.",
+    message: "an unknown error has occurred. If this continues, please contact your administrator.",
   };
 
-  let rowsCount = 0;
+  let conn: any;
+  try {
+    conn = await getPools();
+
+    // Check if the specified language exists before attempting to delete
+    const row = await daoBaseLanguage.etDetail(conn, ucode);
+    if (!row || row.length === 0) {
+      result.message = "The specified language does not exist.";
+      return result;
+    }
+
+    const rows = await daoBaseLanguage.etRemove(conn, ucode);
+
+    result.success = true;
+    result.message = "";
+    result.data = rows;
+    result.count = conn.affectedRows || 0;
+
+  } catch (error: any) {
+    moMessage(
+      `languageController.acRemove`,
+      error?.message || error,
+      "error",
+    );
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+
   // default return
-  return {
-    success: true,
-    message: "language patch route is working",
-  };
-};
-
-const acRemove = async () => {
-  let result: IResult = {
-    success: false,
-    message:
-      "an unknown error has occurred. If this continues, please contact your administrator.",
-  };
-
-  let rowsCount = 0;
-  // default return
-  return {
-    success: true,
-    message: "language remove route is working",
-  };
+  return result;
 };
 
 export default {
@@ -120,6 +207,5 @@ export default {
   acDetail,
   acSave,
   acChange,
-  acPatch,
   acRemove,
 };
