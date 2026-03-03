@@ -3,17 +3,15 @@ import getPools from "../../libs/db.ins.js";
 import { IResult } from "../../libs/interface/result.controller.js";
 import { moMessage } from "../../libs/modules/message.js";
 
-import daoBaseLanguage from "../../models/bases/base.language.dao.js";
+import daoBaseLanguage from "../../models/bases/dao.base.language.js";
 
 const acList = async (params: any) => {
   let result: IResult = {
     success: false,
-    message:
-      "an unknown error has occurred. If this continues, please contact your administrator.",
+    message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 
   let conn: any;
-  let rowsCount = 0;
   
   try {
     conn = await getPools();
@@ -29,11 +27,7 @@ const acList = async (params: any) => {
     };
 
   } catch (error: any) {
-    moMessage(
-      `languageController.acList`,
-      error?.message || error,
-      "error",
-    );
+    moMessage(`languageController.acList`, error?.message || error, "error", );
   } finally {
     if (conn) {
       conn.release();
@@ -65,11 +59,7 @@ const acDetail = async (ucode: string) => {
     result.count = rowCount[0]?.count || 0;
 
   }catch (error: any) {
-    moMessage(
-      `languageController.acDetail`,  
-      error?.message || error,
-      "error",
-    );
+    moMessage(`languageController.acDetail`, error?.message || error, "error");
   } finally {
     if (conn) {
       conn.release();
@@ -83,7 +73,7 @@ const acDetail = async (ucode: string) => {
 const acSave = async (params: any) => {
   let result: IResult = {
     success: false,
-    message: "an unknown error has occurred. If this continues, please contact your administrator.",
+    message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 
   let conn: any;
@@ -124,7 +114,7 @@ const acSave = async (params: any) => {
 const acChange = async (params: any) => {
   let result: IResult = {
     success: false,
-    message: "an unknown error has occurred. If this continues, please contact your administrator.",
+    message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 
   let conn: any;
@@ -165,7 +155,7 @@ const acChange = async (params: any) => {
 const acRemove = async (ucode: string) => {
   let result: IResult = {
     success: false,
-    message: "an unknown error has occurred. If this continues, please contact your administrator.",
+    message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 
   let conn: any;
@@ -181,10 +171,12 @@ const acRemove = async (ucode: string) => {
 
     const rows = await daoBaseLanguage.etRemove(conn, ucode);
 
-    result.success = true;
-    result.message = "";
-    result.data = rows;
-    result.count = conn.affectedRows || 0;
+    if (rows.affectedRows > 0) {
+      result.success = true;
+      result.message = "Data removed successfully.";
+    } else {
+      result.message = "Failed to remove data.";
+    }
 
   } catch (error: any) {
     moMessage(

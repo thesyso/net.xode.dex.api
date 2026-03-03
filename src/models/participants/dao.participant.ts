@@ -4,7 +4,7 @@
   }
   const etList = async (conn: any, params: any) => {}
   // detail
-  const etDetail = async (conn: any, pool_id: number) => {}
+  const etDetail = async (conn: any, participant_id: number) => {}
   // create
   const etSave = async (conn: any, params: any) => {}
   // update

@@ -1,10 +1,10 @@
   const etCount = async (conn: any, params: any) => {
-    var vQuery = `SELECT FOUND_ROWS() as count`;
+    var vQuery = `SELECT COUNT(*) as count FROM user WHERE is_use = 1`;
     return await conn.query(vQuery);
   }
   const etList = async (conn: any, params: any) => {}
   // detail
-  const etDetail = async (conn: any, pool_id: number) => {}
+  const etDetail = async (conn: any, user_id: number) => {}
   // create
   const etSave = async (conn: any, params: any) => {}
   // update

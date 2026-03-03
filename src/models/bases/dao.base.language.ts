@@ -1,8 +1,7 @@
-const etCount = async (conn: any, params: any) => {
+const etCount = async (conn: any) => {
   var vQuery = `SELECT FOUND_ROWS() as count`;
   return await conn.query(vQuery);
 };
-
 // 조회
 const etList = async (conn: any, params: any) => {
   var pageRow = params.pageRow ? params.pageRow : 10;
@@ -13,9 +12,7 @@ const etList = async (conn: any, params: any) => {
   var sr = params.sr ? params.sr : 0;
   var srTxt = params.srTxt?.length > 0 ? `%` + params.srTxt + `%` : "";
 
-  var srBeginDate = new Date(
-    !isNaN(params.srBeginDate) ? params.srBeginDate : null,
-  );
+  var srBeginDate = new Date(!isNaN(params.srBeginDate) ? params.srBeginDate : null);
   var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
 
   //
@@ -23,15 +20,15 @@ const etList = async (conn: any, params: any) => {
 
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
-          m.*
-        FROM market m
+          bl.*
+        FROM base_language bl
     `;
 
   if (srUsed) {
     vParams.push(srUsed);
-    vQuery = vQuery + ` WHERE m.is_use = ?`;
+    vQuery = vQuery + ` WHERE bl.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE m.market_code IS NOT NULL`;
+    vQuery = vQuery + ` WHERE bl.language_code IS NOT NULL`;
   }
 
   // where : sr srtxt
@@ -39,11 +36,11 @@ const etList = async (conn: any, params: any) => {
     switch (true) {
       case sr == 1:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND m.market_code LIKE ?`;
+        vQuery = vQuery + ` AND bl.language_code LIKE ?`;
         break;
       case sr == 2:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND m.market_name LIKE ?`;
+        vQuery = vQuery + ` AND bl.language_name LIKE ?`;
         break;
     }
   }
@@ -51,125 +48,91 @@ const etList = async (conn: any, params: any) => {
   // search date
   if (!isNaN(srBeginDate.getTime())) {
     vParams.push(srBeginDate);
-    vQuery = vQuery + ` AND m.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
+    vQuery = vQuery + ` AND bl.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
   if (!isNaN(srEndDate.getTime())) {
     vParams.push(srEndDate);
     vQuery =
       vQuery +
-      ` AND m.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
+      ` AND bl.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
-  vQuery = vQuery + ` ORDER BY m.market_code ASC `;
-
+  vQuery = vQuery + ` ORDER BY bl.language_code ASC `;
+  // console.log("daoBaseLanguage etList vQuery", vQuery, vParams);
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
 
   return await conn.query(vQuery, vParams);
 };
-
 // 상세조회
 const etDetail = async (conn: any, ucode: string) => {
   var vParams = new Array();
 
   var vQuery = `
         SELECT 
-          m.*
-        FROM market m
-        WHERE m.market_code = ?
+          bl.*
+        FROM base_language bl
+        WHERE bl.language_code = ?
     `;
   vParams.push(ucode);
 
+  // console.log("daoBaseLanguage etDetail vQuery", vQuery, vParams);
   return await conn.query(vQuery, vParams);
 };
-
 // 등록
 const etSave = async (conn: any, params: any) => {
   var vParams = new Array();
 
   var vQuery = `
-        INSERT INTO market (
-          market_code,
-          market_name,
-          price_begin_24,
-          price_end_24,
-          price_max_12,
-          price_min_12,
-          private_volumn_24,
-          volumn_24,
-          gas,
+        INSERT INTO base_language (
+          language_code,
+          language_name,
           is_use
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        ) VALUES (?, ?, 1)
     `;
-  vParams.push(
-    params.market_code,
-    params.market_name,
-    params.price_begin_24,
-    params.price_end_24,
-    params.price_max_12,
-    params.price_min_12,
-    params.private_volumn_24,
-    params.volumn_24,
-    params.gas,
-  );
+  vParams.push(params.language_code, params.language_name);
   return await conn.query(vQuery, vParams);
 };
-
-// 수정
+// 업데이트
 const etChange = async (conn: any, params: any) => {
   var vParams = new Array();
 
   var vQuery = `
-        UPDATE market SET
-          market_name = ?,
-          price_begin_24 = ?,
-          price_end_24 = ?,
-          price_max_12 = ?,
-          price_min_12 = ?,
-          private_volumn_24 = ?,
-          volumn_24 = ?
-        WHERE market_code = ?
+        UPDATE base_language SET
+          language_name = ?
+        WHERE language_code = ?
     `;
   vParams.push(
-    params.market_name,
-    params.price_begin_24,
-    params.price_end_24,
-    params.price_max_12,
-    params.price_min_12,
-    params.private_volumn_24,
-    params.volumn_24,
-    params.market_code
+    params.language_name,   
+    params.language_code
   );
 
   return await conn.query(vQuery, vParams);
 };
+// 패치 할 내용이 없음
+// const etPatchName = async (conn: any, params: any) => {
+//   var vParams = new Array();
 
-// 부분 수정
-const etPatchGas = async (conn: any, params: any) => {
-  var vParams = new Array();
+//   var vQuery = `
+//         UPDATE base_language SET
+//         language_name = ?
+//         WHERE language_code = ?
+//         `;
 
-  var vQuery = `
-        UPDATE market SET
-          gas = ?,
-          updated_at = NOW()
-        WHERE market_code = ?
-        `;
+//   vParams.push(params.language_name, params.language_code);
 
-  vParams.push(params.gas, params.market_code);
-
-  return await conn.query(vQuery, vParams);
-};
-
-// 삭제
+//   return await conn.query(vQuery, vParams);
+// };
+// delete
 const etRemove = async (conn: any, ucode: string) => {
   var vParams = new Array();
 
   vParams.push(ucode);
   var vQuery = `
-        UPDATE market
+        UPDATE base_language
         SET is_use = CASE WHEN is_use = 1 THEN 0 ELSE 1 END
-        WHERE market_code = ?
+        WHERE language_code = ?
   `;
   return await conn.query(vQuery, vParams);
 };
@@ -180,6 +143,5 @@ export default {
   etDetail,
   etSave,
   etChange,
-  etPatchGas,
   etRemove,
 };
