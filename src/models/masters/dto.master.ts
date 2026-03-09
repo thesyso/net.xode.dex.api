@@ -1,5 +1,5 @@
 export interface IMaster {
-  master_uid: number;
+  master_id: number;
   status: number;
   authority: number;
   emailid: string;

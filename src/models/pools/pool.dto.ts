@@ -1,5 +1,5 @@
 export interface IPool {
-  pool_uid: number;
+  pool_id: number;
   market_code: string;
   market_target_code: string;
   protocol: string;
@@ -18,18 +18,17 @@ export interface IPool {
 
 export interface IPoolTicker {
   ticker_id: number;
-  ticker_uid: number;
   price_begin_24: string;
   price_end_24: string;
   price_max_24: string;
   price_min_24: string;
   price_volume_24: string;
   volume_24: string;
-  pool_uid: number;
+  pool_id: number;
 }
 
 export interface IPoolTickerLog{
-  ticker_log_uid: number;
+  ticker_log_id: number;
   price_begin_24: string;
   price_end_24: string;
   price_max_24: string;
@@ -37,6 +36,6 @@ export interface IPoolTickerLog{
   price_volume_24: string;
   volume_24: string;
   created_at: Date;
-  pool_uid: number;
+  pool_id: number;
 }
   

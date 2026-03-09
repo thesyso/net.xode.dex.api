@@ -18,19 +18,25 @@ const etList = async (conn: any, params: any) => {
   var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
 
   //
+  var srMasterId = params.srMasterId ? params.srMasterId : "";
   var srUsed = params.srUsed ? params.srUsed : "";
 
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
-          sh.*
-        FROM soboard_hit sh
+          ms.*
+        FROM master_secure ms
     `;
 
   if (srUsed) {
-    vParams.push(srUsed);
-    vQuery = vQuery + ` WHERE sh.is_use = ?`;
+      vParams.push(srUsed);
+      vQuery = vQuery + ` WHERE ms.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE sh.hit_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE ms.secure_id IS NOT NULL`;
+  }
+
+  if(srMasterId){
+    vParams.push(srMasterId);
+    vQuery = vQuery + ` AND ms.master_id = ?`;
   }
 
   // where : sr srtxt
@@ -38,11 +44,8 @@ const etList = async (conn: any, params: any) => {
     switch (true) {
       case sr == 1:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND sh.board_id = ?`;
-        break;
-      case sr == 2:
+        vQuery = vQuery + ` AND ms.secure_code LIKE ?`;
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND sh.wallet_id = ?`;
         break;
     }
   }
@@ -50,20 +53,21 @@ const etList = async (conn: any, params: any) => {
   // search date
   if (!isNaN(srBeginDate.getTime())) {
     vParams.push(srBeginDate);
-    vQuery = vQuery + ` AND sh.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
+    vQuery = vQuery + ` AND ms.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
   if (!isNaN(srEndDate.getTime())) {
     vParams.push(srEndDate);
     vQuery =
       vQuery +
-      ` AND sh.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
+      ` AND ms.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
-  vQuery = vQuery + ` ORDER BY sh.hit_id DESC `;
+  vQuery = vQuery + ` ORDER BY ms.secure_id DESC `;
 
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
+
   return await conn.query(vQuery, vParams);
 };
 // 상세조회
@@ -72,43 +76,44 @@ const etDetail = async (conn: any, id: number) => {
 
   var vQuery = `
         SELECT 
-          sh.*
-        FROM soboard_hit sh
-        WHERE sh.hit_id = ?
+          ms.*
+        FROM master_secure ms
+        WHERE ms.secure_id = ?
     `;
   vParams.push(id);
 
   return await conn.query(vQuery, vParams);
 };
-// 등록
+// create
 const etSave = async (conn: any, params: any) => {
   var vParams = new Array();
 
   var vQuery = `
-        INSERT INTO soboard_hit (
-          soboard_id,
-          wallet_id,
-          is_use
-        ) VALUES (?, ?, 1)
+        INSERT INTO master_secure (
+          class,
+          secure_code,
+          is_commit,
+          is_use,
+          limited_at,
+          created_at,
+          updated_at,
+          master_id
+        ) VALUES (?, ?, 0, 1, ?, NOW(), NOW(), ?)
     `;
-  vParams.push(params.soboard_id, params.wallet_id);
+  vParams.push(params.class, params.secure_code, params.limited_at, params.master_id);
   return await conn.query(vQuery, vParams);
 };
-// 수정 할 내용이 없음
+// 수정
 // const etChange = async (conn: any, params: any) => {};
-// 패치 할 내용이 없음
-// const etPatch = async (conn: any, params: any) => {};
-// 삭제 및 복구
+// 패치
+const etPatchCommit = async (conn: any, params: any) => {
+  var vQuery = `UPDATE master_secure 
+  SET is_commit = 1, updated_at = NOW() 
+  WHERE secure_id = ? AND secure_code = ? AND is_use = 1 AND is_commit = 0 AND limited_at > NOW()`;
+  return await conn.query(vQuery, [params.secure_id, params.secure_code]);
+};
+// 삭제
 const etRemove = async (conn: any, id: number) => {
-  var vParams = new Array();
-
-  var vQuery = `
-        UPDATE soboard_hit SET
-        is_use = (CASE WHEN is_use = 1 THEN 0 ELSE 1 END)
-        WHERE hit_id = ?
-        `;
-
-  vParams.push(id);
-
-  return await conn.query(vQuery, vParams);
+  var vQuery = `UPDATE master_secure SET is_use = 0 WHERE secure_id = ? AND is_use = 1`;
+  return await conn.query(vQuery, [id]);
 };

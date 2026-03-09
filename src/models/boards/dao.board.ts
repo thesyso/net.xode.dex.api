@@ -4,7 +4,6 @@ const etCount = async (conn: any) => {
 };
 
 const etList = async (conn: any, params: any) => {
-  console.log("daoBoard etList", params);
   var pageRow = params.pageRow ? params.pageRow : 10;
   var pageBegin = params.page ? (params.page - 1) * pageRow : 0;
 
@@ -32,7 +31,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE b.used = ?`;
   } else {
-    vQuery = vQuery + ` WHERE b.board_uid IS NOT NULL`;
+    vQuery = vQuery + ` WHERE b.board_id IS NOT NULL`;
   }
 
   // where : sr srtxt
@@ -56,13 +55,13 @@ const etList = async (conn: any, params: any) => {
   // search date
   if (srBeginDate) {
     vParams.push(srBeginDate);
-    vQuery = vQuery + ` AND b.createdate > DATE_FORMAT(?,'%Y-%m-%d')`;
+    vQuery = vQuery + ` AND b.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
   if (srEndDate) {
     vParams.push(srEndDate);
     vQuery =
       vQuery +
-      ` AND b.createdate < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
+      ` AND b.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
   // paging
@@ -72,9 +71,9 @@ const etList = async (conn: any, params: any) => {
   console.log(vQuery, vParams);
   return await conn.query(vQuery, vParams);
 };
-// detail
-const etDetail = async (conn: any, board_id: number) => {
-  var vParams = [board_id];
+// 상세조회
+const etDetail = async (conn: any, id: number) => {
+  var vParams = [id];
   var vQuery = `
         SELECT b.*
         FROM board b
@@ -85,24 +84,35 @@ const etDetail = async (conn: any, board_id: number) => {
 };
 // create
 const etSave = async (conn: any, params: any) => {
-  var vQuery = `INSERT INTO board (cago, depth, status, writer, subject, contents, created_user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  var vQuery = `INSERT INTO board (
+    cago, 
+    depth, 
+    status, 
+    writer, 
+    subject, 
+    contents,
+    created_at,
+    updated_at,
+    user_id, 
+    wallet_id
+  ) VALUES (?, ?, 1, ?, ?, ?, NOW(), NOW(), ?, ?)`;
   return await conn.query(vQuery, [
     params.cago,
     params.depth,
-    params.status,
     params.writer,
     params.subject,
     params.contents,
-    params.created_user_id,
+    params.user_id,
+    params.wallet_id,
   ]);
 };
-// update
+// 수정
 const etChange = async (conn: any, params: any) => {
   var vQuery = `UPDATE board SET subject = ?, contents = ?, updated_at = NOW() WHERE board_id = ? AND status = 1`;
   return await conn.query(vQuery, [
     params.subject,
     params.contents,
-    params.board_id
+    params.board_id,
   ]);
 };
 
@@ -117,11 +127,10 @@ const etPatchStatus = async (conn: any, params: any) => {
 };
 
 // delete
-const etRemove = async (conn: any, uid: number) => {
+const etRemove = async (conn: any, id: number) => {
   var vQuery = `UPDATE board SET status = 0 WHERE board_id = ? AND status = 1`;
-  return await conn.query(vQuery, [uid]);
+  return await conn.query(vQuery, [id]);
 };
-
 
 export default {
   etCount,
@@ -132,4 +141,4 @@ export default {
   etPatchCago,
   etPatchStatus,
   etRemove,
-}
+};

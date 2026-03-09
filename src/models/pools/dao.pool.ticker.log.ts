@@ -3,13 +3,13 @@
     return await conn.query(vQuery);
   }
   const etList = async (conn: any, params: any) => {}
-  // detail
+  // 상세조회
   const etDetail = async (conn: any, pool_ticker_log_id: number) => {}
   // create
   const etSave = async (conn: any, params: any) => {}
-  // update
+  // 수정
   const etChange = async (conn: any, params: any) => {}
-  // update
+  // 수정
   const etPatch = async (conn: any, params: any) => {}
   // delete
   const etRemove = async (conn: any, params: any) => {}

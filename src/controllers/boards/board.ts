@@ -36,7 +36,7 @@ const acList = async (params: any) => {
   return result;
 };
 
-const acDetail = async (uid: number) => {
+const acDetail = async (id: number) => {
   let result: IResult = {
     success: false,
     message: "an unknown error has occurred. If this continues, please contact your administrator."
@@ -48,7 +48,7 @@ const acDetail = async (uid: number) => {
   try {
     const conn = await getPools();
 
-    const reRes = await daoBoard.etDetail(conn, uid);
+    const reRes = await daoBoard.etDetail(conn, id);
     const rowCount = await daoBoard.etCount(conn);
     result = {
       success: true,
@@ -103,7 +103,7 @@ const acChange = async (params: any) => {
   try {
     const conn = await getPools();
 
-    const row = await daoBoard.etDetail(conn, params.uid);
+    const row = await daoBoard.etDetail(conn, params.id);
     if (!row || row.length === 0) {
       result.message = "The specified board does not exist.";
       return result;
@@ -126,7 +126,7 @@ const acChange = async (params: any) => {
   return result;
 };
 
-const acRemove = async (uid: number) => {
+const acRemove = async (id: number) => {
   let result: IResult = {
     success: false,
     message: "an unknown error has occurred. If this continues, please contact your administrator."
@@ -136,13 +136,13 @@ const acRemove = async (uid: number) => {
   try {
     const conn = await getPools();
 
-    const row = await daoBoard.etDetail(conn, uid);
+    const row = await daoBoard.etDetail(conn, id);
     if (!row || row.length === 0) {
       result.message = "The specified board does not exist.";
       return result;
     }
 
-    const reRes = await daoBoard.etRemove(conn, uid);
+    const reRes = await daoBoard.etRemove(conn, id);
     
     if (reRes.affectedRows > 0) {
       result.success = true;

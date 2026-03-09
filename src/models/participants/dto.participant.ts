@@ -1,5 +1,5 @@
 export interface IParticipant {
-  participant_uid: number;
+  participant_id: number;
   market_code: string | null;
   market_target_code: string | null;
   status: number | null;
@@ -16,11 +16,11 @@ export interface IParticipant {
   is_use: boolean;
   created_at: Date;
   updated_at: Date;
-  pool_uid: number;
+  pool_id: number;
 }
 
 export interface IParticipantDeposit {
-  participant_deposit_uid: number;
+  participant_deposit_id: number;
   market_code: string | null;
   status: number | null;
   fee: string | null;
@@ -29,6 +29,6 @@ export interface IParticipantDeposit {
   is_use: boolean;
   created_at: Date;
   updated_at: Date;
-  swap_uid: number;
-  participant_uid: number;
+  swap_id: number;
+  participant_id: number;
 }

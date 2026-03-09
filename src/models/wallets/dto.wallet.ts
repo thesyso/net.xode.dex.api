@@ -1,5 +1,5 @@
 export interface IWallet {
-  wallet_uid: number;
+  wallet_id: number;
   wallet_class: string;
   wallet_mode: string;
   wallet_name: string;
@@ -14,7 +14,6 @@ export interface IWallet {
 
 export interface IWalletTransaction {
   scan_hash: string;
-  wallet_uid: number;
   status: number;
   block: number;
   confirm_block: number | null;
@@ -28,4 +27,5 @@ export interface IWalletTransaction {
   confirm_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  wallet_id: number;
 }

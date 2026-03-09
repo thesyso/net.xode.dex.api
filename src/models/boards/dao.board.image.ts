@@ -55,8 +55,8 @@ const etList = async (conn: any, params: any) => {
       ` AND bi.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
-  vQuery = vQuery + ` ORDER BY bi.image_id ASC `;
-  // console.log("daoBaseLanguage etList vQuery", vQuery, vParams);
+  vQuery = vQuery + ` ORDER BY bi.image_id DESC `;
+
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
@@ -65,7 +65,7 @@ const etList = async (conn: any, params: any) => {
 };
 
 // 상세조회
-const etDetail = async (conn: any, uid: number) => {
+const etDetail = async (conn: any, id: number) => {
   var vParams = new Array();
 
   var vQuery = `
@@ -74,7 +74,7 @@ const etDetail = async (conn: any, uid: number) => {
         FROM board_image bi
         WHERE bi.image_id = ?
     `;
-  vParams.push(uid);
+  vParams.push(id);
 
   return await conn.query(vQuery, vParams);
 };
@@ -94,17 +94,17 @@ const etSave = async (conn: any, params: any) => {
   return await conn.query(vQuery, vParams);
 };
 
-// 업데이트 할 내용이 없음
+// 수정 할 내용이 없음
 // const etChange = async (conn: any, params: any) => {};
 
 // 패치 할 내용이 없음
 // const etPatch = async (conn: any, params: any) => {};
 
 // 삭제
-const etRemove = async (conn: any, uid: number) => {
+const etRemove = async (conn: any, id: number) => {
   var vParams = new Array();
 
-  vParams.push(uid);
+  vParams.push(id);
   var vQuery = `
         UPDATE board_image
         SET is_use = 0

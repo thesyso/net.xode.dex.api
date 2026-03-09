@@ -22,7 +22,7 @@ const etList = async (conn: any, params: any) => {
 
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
-          bl.*
+          bf.*
         FROM board_favorite bf
     `;
 
@@ -42,7 +42,7 @@ const etList = async (conn: any, params: any) => {
         break;
       case sr == 2:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND bf.user_id = ?`;
+        vQuery = vQuery + ` AND bf.wallet_id = ?`;
         break;
     }
   }
@@ -59,7 +59,7 @@ const etList = async (conn: any, params: any) => {
       ` AND bf.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
-  vQuery = vQuery + ` ORDER BY bf.favorite_id ASC `;
+  vQuery = vQuery + ` ORDER BY bf.favorite_id DESC `;
 
   // paging
   vParams.push(pageBegin, pageRow);
@@ -67,7 +67,7 @@ const etList = async (conn: any, params: any) => {
   return await conn.query(vQuery, vParams);
 };
 // 상세조회
-const etDetail = async (conn: any, uid: number) => {
+const etDetail = async (conn: any, id: number) => {
   var vParams = new Array();
 
   var vQuery = `
@@ -76,7 +76,7 @@ const etDetail = async (conn: any, uid: number) => {
         FROM board_favorite bf
         WHERE bf.favorite_id = ?
     `;
-  vParams.push(uid);
+  vParams.push(id);
 
   return await conn.query(vQuery, vParams);
 };
@@ -87,19 +87,19 @@ const etSave = async (conn: any, params: any) => {
   var vQuery = `
         INSERT INTO board_favorite (
           board_id,
-          user_id,
+          wallet_id,
           is_use
         ) VALUES (?, ?, 1)
     `;
-  vParams.push(params.board_id, params.user_id);
+  vParams.push(params.board_id, params.wallet_id);
   return await conn.query(vQuery, vParams);
 };
-// 업데이트 할 내용이 없음
+// 수정 할 내용이 없음
 // const etChange = async (conn: any, params: any) => {};
 // 패치 할 내용이 없음
 // const etPatch = async (conn: any, params: any) => {};
 // 삭제 및 복구
-const etRemove = async (conn: any, uid: number) => {
+const etRemove = async (conn: any, id: number) => {
   var vParams = new Array();
 
   var vQuery = `
@@ -108,7 +108,7 @@ const etRemove = async (conn: any, uid: number) => {
         WHERE favorite_id = ?
         `;
 
-  vParams.push(uid);
+  vParams.push(id);
 
   return await conn.query(vQuery, vParams);
 };

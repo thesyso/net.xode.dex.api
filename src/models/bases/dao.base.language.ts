@@ -57,8 +57,8 @@ const etList = async (conn: any, params: any) => {
       ` AND bl.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
-  vQuery = vQuery + ` ORDER BY bl.language_code ASC `;
-  // console.log("daoBaseLanguage etList vQuery", vQuery, vParams);
+  vQuery = vQuery + ` ORDER BY bl.language_code DESC `;
+  
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
@@ -77,7 +77,6 @@ const etDetail = async (conn: any, ucode: string) => {
     `;
   vParams.push(ucode);
 
-  // console.log("daoBaseLanguage etDetail vQuery", vQuery, vParams);
   return await conn.query(vQuery, vParams);
 };
 // 등록
@@ -94,7 +93,7 @@ const etSave = async (conn: any, params: any) => {
   vParams.push(params.language_code, params.language_name);
   return await conn.query(vQuery, vParams);
 };
-// 업데이트
+// 수정
 const etChange = async (conn: any, params: any) => {
   var vParams = new Array();
 

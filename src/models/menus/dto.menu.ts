@@ -1,5 +1,4 @@
 export interface IMenu {
-  menu_id: number;
   menu_code: string;
   grant: number;
   menu_name: string;

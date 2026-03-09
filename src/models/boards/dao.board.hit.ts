@@ -22,15 +22,15 @@ const etList = async (conn: any, params: any) => {
 
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
-          sh.*
-        FROM soboard_hit sh
+          bh.*
+        FROM board_hit bh
     `;
 
   if (srUsed) {
     vParams.push(srUsed);
-    vQuery = vQuery + ` WHERE sh.is_use = ?`;
+    vQuery = vQuery + ` WHERE bh.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE sh.hit_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE bh.hit_id IS NOT NULL`;
   }
 
   // where : sr srtxt
@@ -38,11 +38,11 @@ const etList = async (conn: any, params: any) => {
     switch (true) {
       case sr == 1:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND sh.board_id = ?`;
+        vQuery = vQuery + ` AND bh.board_id = ?`;
         break;
       case sr == 2:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND sh.wallet_id = ?`;
+        vQuery = vQuery + ` AND bh.wallet_id = ?`;
         break;
     }
   }
@@ -50,16 +50,16 @@ const etList = async (conn: any, params: any) => {
   // search date
   if (!isNaN(srBeginDate.getTime())) {
     vParams.push(srBeginDate);
-    vQuery = vQuery + ` AND sh.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
+    vQuery = vQuery + ` AND bh.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
   if (!isNaN(srEndDate.getTime())) {
     vParams.push(srEndDate);
     vQuery =
       vQuery +
-      ` AND sh.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
+      ` AND bh.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
-  vQuery = vQuery + ` ORDER BY sh.hit_id DESC `;
+  vQuery = vQuery + ` ORDER BY bh.hit_id DESC `;
 
   // paging
   vParams.push(pageBegin, pageRow);
@@ -72,9 +72,9 @@ const etDetail = async (conn: any, id: number) => {
 
   var vQuery = `
         SELECT 
-          sh.*
-        FROM soboard_hit sh
-        WHERE sh.hit_id = ?
+          bh.*
+        FROM board_hit bh
+        WHERE bh.hit_id = ?
     `;
   vParams.push(id);
 
@@ -85,13 +85,13 @@ const etSave = async (conn: any, params: any) => {
   var vParams = new Array();
 
   var vQuery = `
-        INSERT INTO soboard_hit (
-          soboard_id,
+        INSERT INTO board_hit (
+          board_id,
           wallet_id,
           is_use
         ) VALUES (?, ?, 1)
     `;
-  vParams.push(params.soboard_id, params.wallet_id);
+  vParams.push(params.board_id, params.wallet_id);
   return await conn.query(vQuery, vParams);
 };
 // 수정 할 내용이 없음
@@ -103,7 +103,7 @@ const etRemove = async (conn: any, id: number) => {
   var vParams = new Array();
 
   var vQuery = `
-        UPDATE soboard_hit SET
+        UPDATE board_hit SET
         is_use = (CASE WHEN is_use = 1 THEN 0 ELSE 1 END)
         WHERE hit_id = ?
         `;
@@ -111,4 +111,14 @@ const etRemove = async (conn: any, id: number) => {
   vParams.push(id);
 
   return await conn.query(vQuery, vParams);
+};
+
+export default {
+  etCount,
+  etList,
+  etDetail,
+  etSave,
+  // etChange,
+  // etPatch,
+  etRemove,
 };
