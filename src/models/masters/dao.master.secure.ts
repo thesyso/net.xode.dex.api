@@ -1,4 +1,4 @@
-const etCount = async (conn: any, params: any) => {
+const etCount = async (conn: any) => {
   var vQuery = `SELECT FOUND_ROWS() as count`;
   return await conn.query(vQuery);
 };
@@ -26,7 +26,7 @@ const etList = async (conn: any, params: any) => {
           ms.*
         FROM master_secure ms
     `;
-
+  
   if (srUsed) {
       vParams.push(srUsed);
       vQuery = vQuery + ` WHERE ms.is_use = ?`;
@@ -116,4 +116,14 @@ const etPatchCommit = async (conn: any, params: any) => {
 const etRemove = async (conn: any, id: number) => {
   var vQuery = `UPDATE master_secure SET is_use = 0 WHERE secure_id = ? AND is_use = 1`;
   return await conn.query(vQuery, [id]);
+};
+
+export default {
+  etCount,
+  etList,
+  etDetail,
+  etSave,
+  etPatchCommit,
+  etRemove,
+  // etChange,
 };

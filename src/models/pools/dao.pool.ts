@@ -1,4 +1,4 @@
-const etCount = async (conn: any, params: any) => {
+const etCount = async (conn: any) => {
   var vQuery = `SELECT FOUND_ROWS() as count`;
   return await conn.query(vQuery);
 };
@@ -144,4 +144,17 @@ const etPatchTrade = async (conn: any, params: any) => {
   ]);
 };
 // delete
-const etRemove = async (conn: any, id: number) => {};
+const etRemove = async (conn: any, id: number) => {
+  var vQuery = `UPDATE pool SET status = 0 WHERE pool_id = ? AND is_use = 1`;
+  return await conn.query(vQuery, [id]);
+};
+
+export default {
+  etCount,
+  etList,
+  etDetail,
+  etSave,
+  etChange,
+  etPatchTrade,
+  etRemove,
+};

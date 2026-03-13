@@ -1,4 +1,4 @@
-  const etCount = async (conn: any, params: any) => {
+  const etCount = async (conn: any) => {
     var vQuery = `SELECT FOUND_ROWS() as count`;
     return await conn.query(vQuery);
   }
@@ -13,3 +13,13 @@
   const etPatch = async (conn: any, params: any) => {}
   // delete
   const etRemove = async (conn: any, params: any) => {}
+
+  export default {
+    etCount,
+    etList,
+    etDetail,
+    etSave,
+    etChange,
+    etPatch,
+    etRemove,
+  };

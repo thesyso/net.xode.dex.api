@@ -1,4 +1,4 @@
-const etCount = async (conn: any, params: any) => {
+const etCount = async (conn: any) => {
   var vQuery = `SELECT FOUND_ROWS() as count`;
   return await conn.query(vQuery);
 };

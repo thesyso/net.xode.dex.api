@@ -1,4 +1,4 @@
-const etCount = async (conn: any, params: any) => {
+const etCount = async (conn: any) => {
   var vQuery = `SELECT FOUND_ROWS() as count`;
   return await conn.query(vQuery);
 };
@@ -229,7 +229,7 @@ const etPatchEmail = async (conn: any, params: any) => {
 
   return await conn.query(vQuery, vParams);
 };
-const etPatchNicName = async (conn: any, params: any) => {
+const etPatchNickName = async (conn: any, params: any) => {
   var vParams = new Array();
 
   var vQuery = `
@@ -279,7 +279,7 @@ export default {
   etPatchAuthority,
   etPatchPassword,
   etPatchEmail,
-  etPatchNicName,
+  etPatchNickName,
   etPatchMasterName,
   etRemove,
 };

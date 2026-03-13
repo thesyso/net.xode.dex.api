@@ -1,4 +1,4 @@
-const etCount = async (conn: any, params: any) => {
+const etCount = async (conn: any) => {
   var vQuery = `SELECT FOUND_ROWS() as count`;
   return await conn.query(vQuery);
 };
@@ -19,6 +19,8 @@ const etList = async (conn: any, params: any) => {
 
   //
   var srUsed = params.srUsed ? params.srUsed : "";
+  var srUserId = params.srUserId ? params.srUserId : "";
+
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
           s.*
@@ -32,12 +34,17 @@ const etList = async (conn: any, params: any) => {
     vQuery = vQuery + ` WHERE s.secure_id IS NOT NULL`;
   }
 
+  if(srUserId){
+    vParams.push(srUserId);
+    vQuery = vQuery + ` AND s.user_id = ?`;
+  }
+
   // where : sr srtxt
   if (sr != 0 && srTxt.length > 0) {
     switch (true) {
       case sr == 1:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND (s.file_name LIKE ? OR s.origin_name LIKE ?)`;
+        vQuery = vQuery + ` AND s.secure_code LIKE ?`;
         vParams.push(srTxt);
         break;
     }
@@ -64,12 +71,60 @@ const etList = async (conn: any, params: any) => {
   return await conn.query(vQuery, vParams);
 };
 // 상세조회
-const etDetail = async (conn: any, secure_id: number) => {};
+const etDetail = async (conn: any, id: number) => {
+  var vParams = new Array();
+
+  var vQuery = `
+        SELECT 
+          s.*
+        FROM secure s
+        WHERE s.secure_id = ?
+    `;
+  vParams.push(id);
+
+  return await conn.query(vQuery, vParams);
+};
 // create
-const etSave = async (conn: any, params: any) => {};
+const etSave = async (conn: any, params: any) => {
+  var vParams = new Array();
+
+  var vQuery = `
+        INSERT INTO secure (
+          class,
+          secure_code,
+          is_commit,
+          is_use,
+          limited_at,
+          created_at,
+          updated_at,
+          master_id
+        ) VALUES (?, ?, 0, 1, ?, NOW(), NOW(), ?)
+    `;
+  vParams.push(params.class, params.secure_code, params.limited_at, params.master_id);
+  return await conn.query(vQuery, vParams);
+};
 // 수정
-const etChange = async (conn: any, params: any) => {};
+// const etChange = async (conn: any, params: any) => {};
 // 수정
-const etPatch = async (conn: any, params: any) => {};
+const etPatchCommit = async (conn: any, params: any) => {
+  var vQuery = `UPDATE secure 
+  SET is_commit = 1, updated_at = NOW() 
+  WHERE secure_id = ? AND secure_code = ? AND is_use = 1 AND is_commit = 0 AND limited_at > NOW()`;
+  return await conn.query(vQuery, [params.secure_id, params.secure_code]);
+};
 // delete
-const etRemove = async (conn: any, params: any) => {};
+const etRemove = async (conn: any, id: number) => {
+  var vQuery = `UPDATE secure SET is_use = 0 WHERE secure_id = ? AND is_use = 1`;
+  return await conn.query(vQuery, [id]);
+};
+
+export default {
+  etCount,
+  etList, 
+  etDetail,
+  etSave,
+  etPatchCommit,
+  etRemove,
+  // etChange,
+};
+
