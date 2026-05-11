@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 
-import { asyncHandler } from '../../middleware/asyncHandler';
+import { asyncHandler } from '../../mwares/asyncHandler';
 import { ApiError } from '../../pages/errors/apiError';
 
 export const getUser = asyncHandler(async (req: Request, res: Response) => {

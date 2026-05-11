@@ -25,7 +25,7 @@ const etList = async (conn: any, params: any) => {
         SELECT SQL_CALC_FOUND_ROWS 
           wt.*
         FROM wallet_transaction wt
-        WHERE wt.scan_hash IS NOT NULL
+        WHERE 1=1
     `;
 
   if (srStatus) {

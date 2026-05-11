@@ -4,3 +4,9 @@ export interface IResult {
   data?: any;
   count?: bigint | number;
 }
+
+export interface IResultRefresh {
+  ok: boolean;
+  message: string;
+  uid?: number;
+}

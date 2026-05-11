@@ -1,6 +1,6 @@
 import express from "express";
 import LanguageController from "../../../../controllers/bases/language";
-import { IResult } from "../../../../libs/interface/result.controller";
+import { IResult } from "../../../../libs/interface/result.interface";
 
 const router = express.Router();
 

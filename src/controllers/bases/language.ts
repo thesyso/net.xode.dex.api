@@ -1,6 +1,6 @@
 import getPools from "../../libs/db.ins.js";
 
-import { IResult } from "../../libs/interface/result.controller.js";
+import { IResult } from "../../libs/interface/result.interface.js";
 import { moMessage } from "../../libs/modules/message.js";
 
 import daoBaseLanguage from "../../models/bases/dao.base.language.js";

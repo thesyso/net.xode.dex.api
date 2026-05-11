@@ -58,6 +58,10 @@ const etList = async (conn: any, params: any) => {
         vParams.push(srTxt);
         vQuery = vQuery + ` AND m.phone LIKE ?`;
         break;
+      case sr == 4:
+        vParams.push(srTxt);
+        vQuery = vQuery + ` AND m.connected_ip LIKE ?`;
+        break;
     }
   }
 
@@ -86,7 +90,7 @@ const etDetail = async (conn: any, id: number) => {
   var vParams = new Array();
 
   var vQuery = `
-        SELECT 
+        SELECT SQL_CALC_FOUND_ROWS 
           m.*
         FROM master m
         WHERE m.master_id = ?
@@ -96,9 +100,27 @@ const etDetail = async (conn: any, id: number) => {
   // console.log("daoBaseLanguage etDetail vQuery", vQuery, vParams);
   return await conn.query(vQuery, vParams);
 };
+const etDetailInEmailID = async (conn: any, params: any) => {
+  var vParams = new Array();
+
+  var vQuery = `
+        SELECT SQL_CALC_FOUND_ROWS 
+          m.*
+        FROM master m
+        WHERE m.emailid = ?
+    `;
+  vParams.push(params.emailid);
+
+  // console.log("daoBaseLanguage etDetailInEmailID vQuery", vQuery, vParams);
+  return await conn.query(vQuery, vParams);
+}
+
+
 // 등록
 const etSave = async (conn: any, params: any) => {
   var vParams = new Array();
+
+  console.log("daoMaster etSave params", params);
 
   var vQuery = `
         INSERT INTO master (
@@ -118,9 +140,9 @@ const etSave = async (conn: any, params: any) => {
           address,
           address_detail,
           zipcode,
-          coinnectd_ip,
+          connected_ip,
           connected_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     `;
   vParams.push(
     params.status,
@@ -139,8 +161,7 @@ const etSave = async (conn: any, params: any) => {
     params.address,
     params.address_detail,
     params.zipcode,
-    params.coinnectd_ip,
-    params.connected_at,
+    params.connected_ip
   );
   return await conn.query(vQuery, vParams);
 };
@@ -273,6 +294,7 @@ export default {
   etCount,
   etList,
   etDetail,
+  etDetailInEmailID,
   etSave,
   etChange,
   etPatchStatus,

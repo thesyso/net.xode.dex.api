@@ -44,7 +44,12 @@ const etList = async (conn: any, params: any) => {
       case sr == 2:
         vParams.push(srTxt, srTxt);
         vQuery =
-          vQuery + ` AND (mi.language_code LIKE ? OR mi.language_name LIKE ?)`;
+          vQuery + ` AND mi.language_code LIKE ?`;
+        break;
+      case sr == 3:
+        vParams.push(srTxt, srTxt);
+        vQuery =
+          vQuery + ` AND mi.language_name LIKE ?`;
         break;
     }
   }

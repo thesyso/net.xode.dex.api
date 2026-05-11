@@ -64,6 +64,18 @@ const etList = async (conn: any, params: any) => {
       ` AND b.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
+  // search cago
+  if (cago) {
+    vParams.push(cago);
+    vQuery = vQuery + ` AND b.cago = ?`;
+  }
+
+  // search status
+  if (srStatus) {
+    vParams.push(srStatus);
+    vQuery = vQuery + ` AND b.status = ?`;
+  }
+
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
@@ -71,6 +83,7 @@ const etList = async (conn: any, params: any) => {
   console.log(vQuery, vParams);
   return await conn.query(vQuery, vParams);
 };
+
 // 상세조회
 const etDetail = async (conn: any, id: number) => {
   var vParams = [id];
@@ -137,7 +150,7 @@ export default {
   etList,
   etDetail,
   etSave,
-  etChange,
+  etChange, 
   etPatchCago,
   etPatchStatus,
   etRemove,

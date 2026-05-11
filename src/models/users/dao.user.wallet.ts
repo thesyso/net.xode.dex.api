@@ -2,7 +2,67 @@ const etCount = async (conn: any) => {
   var vQuery = `SELECT FOUND_ROWS() as count`;
   return await conn.query(vQuery);
 };
-const etListAsWallet = async (conn: any, params: any) => {
+const etList = async (conn: any, params: any) => {
+  var pageRow = params.pageRow ? params.pageRow : 10;
+  var pageBegin = params.page ? (params.page - 1) * pageRow : 0;
+
+  var vParams = new Array();
+
+  var sr = params.sr ? params.sr : 0;
+  var srTxt = params.srTxt?.length > 0 ? `%` + params.srTxt + `%` : "";
+
+  var srBeginDate = new Date(
+    !isNaN(params.srBeginDate) ? params.srBeginDate : null,
+  );
+  var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
+
+  //
+  var srStatus = params.srStatus ? params.srStatus : "";
+
+  var vQuery = `
+        SELECT SQL_CALC_FOUND_ROWS 
+          *
+        FROM user_wallet uw
+    `;
+
+  if (srStatus) {
+    vParams.push(srStatus);
+    vQuery = vQuery + ` WHERE uw.status = ?`;
+  } else {
+    vQuery = vQuery + ` WHERE uw.user_wallet_id IS NOT NULL`;
+  }
+
+  // where : sr srtxt
+  if (sr != 0 && srTxt.length > 0) {
+    switch (true) {
+      case sr == 1:
+        vParams.push(srTxt);
+        vQuery = vQuery + ` AND w.signature LIKE ?`;
+        break;
+    }
+  }
+
+  // search date
+  if (!isNaN(srBeginDate.getTime())) {
+    vParams.push(srBeginDate);
+    vQuery = vQuery + ` AND uw.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
+  }
+  if (!isNaN(srEndDate.getTime())) {
+    vParams.push(srEndDate);
+    vQuery =
+      vQuery +
+      ` AND uw.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
+  }
+
+  vQuery = vQuery + ` ORDER BY uw.user_wallet_id DESC `;
+
+  // paging
+  vParams.push(pageBegin, pageRow);
+  vQuery = vQuery + ` LIMIT ?, ? `;
+
+  return await conn.query(vQuery, vParams);
+};
+const etListInWallet = async (conn: any, params: any) => {
   var pageRow = params.pageRow ? params.pageRow : 10;
   var pageBegin = params.page ? (params.page - 1) * pageRow : 0;
 
@@ -76,7 +136,20 @@ const etListAsWallet = async (conn: any, params: any) => {
   return await conn.query(vQuery, vParams);
 };
 // 상세조회
-const etDetailAsWallet = async (conn: any, id: number) => {
+const etDetail = async (conn: any, id: number) => {
+  var vParams = new Array();
+
+  var vQuery = `
+        SELECT 
+          uw.*
+        FROM user_wallet uw
+        WHERE uw.user_wallet_id = ?
+    `;
+  vParams.push(id);
+
+  return await conn.query(vQuery, vParams);
+};
+const etDetailInWallet = async (conn: any, id: number) => {
   var vParams = new Array();
 
   var vQuery = `
@@ -98,6 +171,20 @@ const etDetailAsWallet = async (conn: any, id: number) => {
 
   return await conn.query(vQuery, vParams);
 };
+const etDetailByWalletId = async (conn: any, walletId: number) => {
+  var vParams = new Array();
+
+  var vQuery = `
+        SELECT 
+          uw.*
+        FROM user_wallet uw
+        WHERE uw.wallet_id = ?
+    `;
+  vParams.push(walletId);
+
+  return await conn.query(vQuery, vParams);
+};
+
 // create
 const etSave = async (conn: any, params: any) => {
   var vParams = new Array();
@@ -165,10 +252,14 @@ const etRemove = async (conn: any, id: number) => {
 
 export default {
   etCount,
-  etListAsWallet,
-  etDetailAsWallet,
+  etList,
+  etListInWallet,
+  etDetail,
+  etDetailInWallet,
+  etDetailByWalletId,
   etSave,
   etChange,
   etPatchStatus,
   etRemove,
+
 };

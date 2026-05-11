@@ -1,6 +1,6 @@
 import express from 'express';
 
-import authRouter from './auths';
+import authRouter from './auth';
 import publicRouter from './public';
 import privateRouter from './private';
 

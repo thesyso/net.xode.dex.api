@@ -17,30 +17,19 @@ const etList = async (conn: any, params: any) => {
   );
   var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
 
-  var srStatus = params.srStatus ? params.srStatus : "";
-
-
   var vQuery = `
-        SELECT SQL_CALC_FOUND_ROWS 
-          pt.*
-        FROM pool_ticker pt
-    `;
-
-  if (srStatus) {
-    vParams.push(srStatus);
-    vQuery = vQuery + ` WHERE pt.status = ?`;
-  } else {
-    vQuery = vQuery + ` WHERE pt.pool_id IS NOT NULL`;
-  }
-
+    SELECT SQL_CALC_FOUND_ROWS 
+      pt.*
+    FROM pool_ticker pt
+    WHERE 1 = 1
+  `;
 
   // where : sr srtxt
   if (sr != 0 && srTxt.length > 0) {
     switch (true) {
       case sr == 1:
         vParams.push(srTxt, srTxt);
-        vQuery =
-          vQuery + ` AND (pt.market_code LIKE ? OR pt.market_target_code LIKE ?)`;
+        vQuery = vQuery + ` AND (pt.market_code LIKE ? OR pt.market_target_code LIKE ?)`;
         break;
     }
   }
@@ -48,13 +37,13 @@ const etList = async (conn: any, params: any) => {
   // search date
   if (srBeginDate) {
     vParams.push(srBeginDate);
-    vQuery = vQuery + ` AND pt.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
+    vQuery = vQuery + ` AND pt.ticker_date > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
   if (srEndDate) {
     vParams.push(srEndDate);
-    vQuery =
+    vQuery = vQuery + ` AND pt.ticker_date < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
       vQuery +
-      ` AND pt.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
+      ` AND pt.ticker_date < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
   // paging
@@ -90,7 +79,7 @@ const etSave = async (conn: any, params: any) => {
     updated_at,
     pool_id
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`;
-   
+
   return await conn.query(vQuery, [
     params.ticker_id,
     params.ticker_date,
@@ -103,6 +92,7 @@ const etSave = async (conn: any, params: any) => {
     params.pool_id,
   ]);
 };
+
 // 수정
 const etChange = async (conn: any, params: any) => {
   var vQuery = `UPDATE pool_ticker
@@ -118,17 +108,37 @@ const etChange = async (conn: any, params: any) => {
     params.ticker_id,
   ]);
 };
+const etChangeFromTickerDate = async (conn: any, params: any) => {
+  var vQuery = `UPDATE pool_ticker
+  SET price_begin_24 = ?, price_end_24 = ?, price_max_24 = ?, price_min_24 = ?, price_volumn_24 = ?, volumn_24 = ?, updated_at = NOW()
+  WHERE ticker_date = ? and pool_id = ?`;
+  return await conn.query(vQuery, [
+    params.price_begin_24,
+    params.price_end_24,
+    params.price_max_24,
+    params.price_min_24,
+    params.price_volumn_24,
+    params.volumn_24,
+    params.ticker_date,
+    params.pool_id
+  ]);
+};
+
 // 패치
 // 총시장가치와 예상수익률을 등록
 const etPatchPriceEnd = async (conn: any, params: any) => {
   var vQuery = `UPDATE pool_ticker
   SET price_end_24 = ?, updated_at = NOW() 
   WHERE ticker_id = ?`;
-  return await conn.query(vQuery, [
-    params.price_end_24,
-    params.ticker_id,
-  ]);
+  return await conn.query(vQuery, [params.price_end_24, params.ticker_id]);
 };
+const etPatchPriceEndFromTickerDate = async (conn: any, params: any) => {
+  var vQuery = `UPDATE pool_ticker
+  SET price_end_24 = ?, updated_at = NOW() 
+  WHERE ticker_date = ? and pool_id = ?`;
+  return await conn.query(vQuery, [params.price_end_24, params.ticker_date, params.pool_id]);
+};
+
 // delete
 const etRemove = async (conn: any, id: number) => {
   var vQuery = `DELETE FROM pool_ticker WHERE ticker_id = ?`;
@@ -141,6 +151,8 @@ export default {
   etDetail,
   etSave,
   etChange,
+  etChangeFromTickerDate,
   etPatchPriceEnd,
+  etPatchPriceEndFromTickerDate,
   etRemove,
 };

@@ -19,7 +19,7 @@ const etList = async (conn: any, params: any) => {
 
   //
   var srUsed = params.srUsed ? params.srUsed : "";
-  var srUserId = params.srUserId ? params.srUserId : "";
+  var srClass = params.srClass ? params.srClass : "";
 
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
@@ -34,9 +34,9 @@ const etList = async (conn: any, params: any) => {
     vQuery = vQuery + ` WHERE s.secure_id IS NOT NULL`;
   }
 
-  if(srUserId){
-    vParams.push(srUserId);
-    vQuery = vQuery + ` AND s.user_id = ?`;
+  if(srClass){
+    vParams.push(srClass);
+    vQuery = vQuery + ` AND s.class = ?`;
   }
 
   // where : sr srtxt
@@ -70,6 +70,78 @@ const etList = async (conn: any, params: any) => {
 
   return await conn.query(vQuery, vParams);
 };
+const etListEx = async (conn: any, params: any) => {
+  var pageRow = params.pageRow ? params.pageRow : 10;
+  var pageBegin = params.page ? (params.page - 1) * pageRow : 0;
+
+  var vParams = new Array();
+
+  var sr = params.sr ? params.sr : 0;
+  var srTxt = params.srTxt?.length > 0 ? `%` + params.srTxt + `%` : "";
+
+  var srBeginDate = new Date(
+    !isNaN(params.srBeginDate) ? params.srBeginDate : null,
+  );
+  var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
+
+  //
+  var srUsed = params.srUsed ? params.srUsed : "";
+  var srClass = params.srClass ? params.srClass : "";
+
+  var vQuery = `
+        SELECT SQL_CALC_FOUND_ROWS 
+          s.*,
+          u.nickname,
+          u.email
+          u.name
+        FROM secure s
+        LEFT JOIN user u ON s.user_id = u.user_id
+    `;
+
+  if (srUsed) {
+    vParams.push(srUsed);
+    vQuery = vQuery + ` WHERE s.is_use = ?`;
+  } else {
+    vQuery = vQuery + ` WHERE s.secure_id IS NOT NULL`;
+  }
+
+  if(srClass){
+    vParams.push(srClass);
+    vQuery = vQuery + ` AND s.class = ?`;
+  }
+
+  // where : sr srtxt
+  if (sr != 0 && srTxt.length > 0) {
+    switch (true) {
+      case sr == 1:
+        vParams.push(srTxt);
+        vQuery = vQuery + ` AND s.secure_code LIKE ?`;
+        vParams.push(srTxt);
+        break;
+    }
+  }
+
+  // search date
+  if (!isNaN(srBeginDate.getTime())) {
+    vParams.push(srBeginDate);
+    vQuery = vQuery + ` AND s.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
+  }
+  if (!isNaN(srEndDate.getTime())) {
+    vParams.push(srEndDate);
+    vQuery =
+      vQuery +
+      ` AND s.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
+  }
+
+  vQuery = vQuery + ` ORDER BY s.secure_id DESC `;
+
+  // paging
+  vParams.push(pageBegin, pageRow);
+  vQuery = vQuery + ` LIMIT ?, ? `;
+
+  return await conn.query(vQuery, vParams);
+};
+
 // 상세조회
 const etDetail = async (conn: any, id: number) => {
   var vParams = new Array();

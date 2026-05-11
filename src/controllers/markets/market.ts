@@ -1,5 +1,5 @@
 import getPools from "../../libs/db.ins";
-import { IResult } from "../../libs/interface/result.controller";
+import { IResult } from "../../libs/interface/result.interface";
 import { moMessage } from "../../libs/modules/message";
 
 import daoMarket from "../../models/markets/dao.market";

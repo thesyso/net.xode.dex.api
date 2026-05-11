@@ -15,22 +15,28 @@ const etList = async (conn: any, params: any) => {
     !isNaN(params.srBeginDate) ? params.srBeginDate : null,
   );
   var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
+  var srBoardId = params.srBoardId ? params.srBoardId : 0;
 
-  var cago = params.cago ? params.cago : "";
-  var srStatus = params.srStatus ? params.srStatus : "1";
+  // var cago = params.cago ? params.cago : "";
+  // var srStatus = params.srStatus ? params.srStatus : "1";
   var srUsed = params.srUsed ? params.srUsed : "";
 
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
           sc.*
-        FROM soboard_contents sc
+        FROM soboard_content sc
     `;
 
   if (srUsed) {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE sc.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE sc.contents_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE sc.content_id IS NOT NULL`;
+  }
+
+  if (srBoardId) {
+    vParams.push(srBoardId);
+    vQuery = vQuery + ` AND sc.soboard_id = ?`;
   }
 
   // where : sr srtxt
@@ -58,7 +64,7 @@ const etList = async (conn: any, params: any) => {
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
-  vQuery = vQuery + ` ORDER BY sc.contents_id DESC `;
+  vQuery = vQuery + ` ORDER BY sc.content_id DESC `;
   console.log(vQuery, vParams);
   return await conn.query(vQuery, vParams);
 };
@@ -67,15 +73,15 @@ const etDetail = async (conn: any, id: number) => {
   var vParams = [id];
   var vQuery = `
         SELECT b.*
-        FROM scboard_contents b
-        WHERE b.contents_id = ?
+        FROM scboard_content b
+        WHERE b.content_id = ?
     `;
 
   return await conn.query(vQuery, vParams);
 };
 // create
 const etSave = async (conn: any, params: any) => {
-  var vQuery = `INSERT INTO scboard_contents (
+  var vQuery = `INSERT INTO scboard_content (
     sort,
     contents,
     is_use,
@@ -91,30 +97,30 @@ const etSave = async (conn: any, params: any) => {
 };
 // 수정
 const etChange = async (conn: any, params: any) => {
-  var vQuery = `UPDATE scboard_contents 
+  var vQuery = `UPDATE scboard_content 
   SET sort = ?, contents = ?, updated_at = NOW() 
-  WHERE contents_id = ?`;
+  WHERE content_id = ?`;
 
   return await conn.query(vQuery, [
     params.sort,
     params.contents,
-    params.contents_id,
+    params.content_id,
   ]);
 };
 // 패치
 const etPatchSort = async (conn: any, params: any) => {
-  var vQuery = `UPDATE scboard_contents SET sort = ?, updated_at = NOW() WHERE contents_id = ?`;
-  return await conn.query(vQuery, [params.sort, params.contents_id]);
+  var vQuery = `UPDATE scboard_content SET sort = ?, updated_at = NOW() WHERE content_id = ?`;
+  return await conn.query(vQuery, [params.sort, params.content_id]);
 };
 const etPatchSortUnShift = async (conn: any, params: any) => {
-  var vQuery = `UPDATE scboard_contents 
+  var vQuery = `UPDATE scboard_content 
   SET sort = sort + 1, updated_at = NOW() 
-  WHERE soboard_id = ? AND contents_id != ? AND sort >= ?`;
-  return await conn.query(vQuery, [params.sort, params.soboard_id, params.contents_id, params.sort]);
+  WHERE soboard_id = ? AND content_id != ? AND sort >= ?`;
+  return await conn.query(vQuery, [params.sort, params.soboard_id, params.content_id, params.sort]);
 };
-// 삭제
+//
 const etRemove = async (conn: any, id: number) => {
-  var vQuery = `UPDATE scboard_contents SET status = 0 WHERE contents_id = ? AND status = 1`;
+  var vQuery = `UPDATE scboard_content SET is_use = 0 WHERE content_id = ? AND is_use = 1`;
   return await conn.query(vQuery, [id]);
 };
 

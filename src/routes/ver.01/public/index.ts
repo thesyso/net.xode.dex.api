@@ -1,4 +1,5 @@
 import express from 'express';
+import nodesRouter from "./nodes/index.js";
 
 const router = express.Router();
 
@@ -9,5 +10,5 @@ router.get('/', (req, res) => {
   });
 });
 
-
+router.use('/nodes', nodesRouter);
 export default router;

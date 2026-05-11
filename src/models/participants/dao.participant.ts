@@ -17,7 +17,7 @@ const etList = async (conn: any, params: any) => {
   var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
 
   //
-  var srIsUse = params.srIsUse ? params.srIsUse : "";
+  var srUsed = params.srUsed ? params.srUsed : "";
   var srStatus = params.srStatus ? params.srStatus : "";
   var srIsOpen = params.srIsOpen ? params.srIsOpen : "";
 
@@ -28,8 +28,8 @@ const etList = async (conn: any, params: any) => {
         WHERE p.participant_id IS NOT NULL
     `;
 
-  if (srIsUse) {
-    vParams.push(srIsUse);
+  if (srUsed) {
+    vParams.push(srUsed);
     vQuery = vQuery + ` AND p.is_use = ?`;
   }
 
@@ -53,7 +53,7 @@ const etList = async (conn: any, params: any) => {
         break;
       case sr == 2:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND p.pool_id = ?`;
+        vQuery = vQuery + ` AND p.asset = ?`;
         break;
     }
   }
@@ -108,9 +108,9 @@ const etSave = async (conn: any, params: any) => {
           start_date,
           end_date,
           fee,
-          fee_rate,,
+          fee_rate,
           withdrawal_fee,
-          withdrawal_fee_rate,
+          withdrawal_target_fee,
           is_open,
           is_use,
           pool_id
@@ -128,7 +128,7 @@ const etSave = async (conn: any, params: any) => {
     params.fee,
     params.fee_rate,
     params.withdrawal_fee,
-    params.withdrawal_fee_rate,
+    params.withdrawal_target_fee,
     params.is_open,
     params.pool_id,
   );
@@ -139,6 +139,7 @@ const etSave = async (conn: any, params: any) => {
 // };
 
 // 패치
+// 1 : request, 2 : processing, 3 : failed, 5 : save, 7 : withdrawal, 9 : completed
 const etPatchStatus = async (conn: any, params: any) => {
   var vParams = new Array();
 

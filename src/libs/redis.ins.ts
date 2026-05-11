@@ -53,6 +53,11 @@ class RedisService {
     return await this.client.get(key);
   }
 
+  async setRemove(key: string) {
+    await this.client.del(key);
+  }
+
+  // 해시 데이터 제어 메서드들
   async setHashData(
     key: string,
     fieldValues: { [key: string]: string | number },
@@ -68,6 +73,10 @@ class RedisService {
   async getAllHashData(key: string) {
     // 해당 키의 모든 필드와 값을 객체 형태로 반환합니다.
     return await this.client.hGetAll(key);
+  }
+
+  async setRemoveHashField(key: string, field: string) {
+    await this.client.hDel(key, field);
   }
 
   // 필요한 경우 원본 클라이언트 반환

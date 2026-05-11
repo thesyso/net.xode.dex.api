@@ -11,7 +11,6 @@ src/
 ### env config
 PORT=3000
 NODE_ENV=development
-DATABASE_URL=mongodb://localhost:27017/mydb
 
 REDIS_DB_SERVER=127.0.0.1
 REDIS_DB_PORT=6379

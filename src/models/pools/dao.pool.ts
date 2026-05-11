@@ -74,6 +74,7 @@ const etList = async (conn: any, params: any) => {
 
   return await conn.query(vQuery, vParams);
 };
+
 // 상세조회
 const etDetail = async (conn: any, id: number) => {
   var vParams = [id];
@@ -85,6 +86,18 @@ const etDetail = async (conn: any, id: number) => {
 
   return await conn.query(vQuery, vParams);
 };
+
+const etIsExist = async (conn: any, market_code: string, protocol: string) => {
+  var vParams = [market_code, protocol];
+  var vQuery = `
+      SELECT p.pool_id  
+      FROM pool p
+      WHERE p.market_code = ? AND p.protocol = ?
+    `;
+
+  return await conn.query(vQuery, vParams);
+};
+
 // create
 const etSave = async (conn: any, params: any) => {
   var vQuery = `INSERT INTO pool (
@@ -118,6 +131,7 @@ const etSave = async (conn: any, params: any) => {
     params.is_use
   ]);
 };
+
 // 수정
 const etChange = async (conn: any, params: any) => {
   var vQuery = `UPDATE pool
@@ -153,6 +167,7 @@ export default {
   etCount,
   etList,
   etDetail,
+  etIsExist,
   etSave,
   etChange,
   etPatchTrade,

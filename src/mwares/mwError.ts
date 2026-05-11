@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../pages/errors/apiError';
 
-export const middlewareError = (
+export const mwError = (
   err: Error,
   req: Request,
   res: Response,

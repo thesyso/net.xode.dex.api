@@ -18,7 +18,6 @@ const etList = async (conn: any, params: any) => {
 
   var cago = params.cago ? params.cago : "";
   var srStatus = params.srStatus ? params.srStatus : "1";
-  var srUsed = params.srUsed ? params.srUsed : "";
 
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
@@ -31,6 +30,11 @@ const etList = async (conn: any, params: any) => {
     vQuery = vQuery + ` WHERE sb.status = ?`;
   } else {
     vQuery = vQuery + ` WHERE sb.soboard_id IS NOT NULL`;
+  }
+
+  if (cago) {
+    vParams.push(cago);
+    vQuery = vQuery + ` AND sb.cago = ?`;
   }
 
   // where : sr srtxt
@@ -84,17 +88,17 @@ const etDetail = async (conn: any, id: number) => {
 // 등록
 const etSave = async (conn: any, params: any) => {
   var vQuery = `INSERT INTO soboard (
-  cago,
-  status,
-  writer,
-  subject,
-  contents,
-  contents_count,
-  hits,
-  created_at,
-  updated_at,
-  user_id,
-  wallet_id
+    cago,
+    status,
+    writer,
+    subject,
+    contents,
+    contents_count,
+    hits,
+    created_at,
+    updated_at,
+    user_id,
+    wallet_id
   ) VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), NOW(), ?, ?)`;
   return await conn.query(vQuery, [
     params.cago,

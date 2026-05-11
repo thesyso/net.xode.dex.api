@@ -23,7 +23,7 @@ const etList = async (conn: any, params: any) => {
   var srStatus = params.srStatus ? params.srStatus : "";
   var srOpen = params.srOpen ? params.srOpen : "";
 
-  var vQuery = `
+  var vQuery = ` 
         SELECT SQL_CALC_FOUND_ROWS 
           pd.*
         FROM participant_deposit pd
@@ -126,9 +126,7 @@ const etChange = async (conn: any, params: any) => {
       market_code = ?,
       status = ?,
       fee = ?,
-      fee_rate = ?,
-      swap_id = ?,
-      participant_id = ?
+      fee_rate = ?
     WHERE p.participant_deposit_id = ?
     `;
   vParams.push(
@@ -136,9 +134,7 @@ const etChange = async (conn: any, params: any) => {
     params.status,
     params.fee,
     params.fee_rate,
-    params.swap_id,
-    params.participant_id,
-    params.participant_deposit_id,
+    params.participant_deposit_id
   );
 
   return await conn.query(vQuery, vParams);
