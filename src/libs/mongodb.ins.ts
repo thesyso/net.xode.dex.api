@@ -1,5 +1,6 @@
 import { MongoClient, Db } from 'mongodb';
 import 'dotenv/config';
+
 import { moMessage } from './modules/message.js';
 
 const uri = `mongodb://${process.env.MONGODB_ID}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_HOST}:${process.env.MONGODB_PORT}`;

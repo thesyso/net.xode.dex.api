@@ -1,3 +1,6 @@
+import 'dotenv/config';
+import jwt from "jsonwebtoken";
+
 import getPools from "../../libs/db.ins.js";
 import { redisService } from "../../libs/redis.ins.js";
 
@@ -8,17 +11,16 @@ import { randomString } from "../../libs/modules/common.random.js"
 //
 import daoMaster from "../../models/masters/dao.master.js";
 
-import {
-  sign,
-  verify,
-  refresh,
-  refreshVerify,
-} from "../../libs/modules/auth.token.js";
+import { sign, verify, refresh, refreshVerify, } from "../../libs/modules/auth.token.js";
 
 import { csEnCryptSHA512 } from "../../libs/modules/common.crypto.js";
 import { IsStatus } from "../../libs/modules/auth.status.js";
 
-//
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || 3600; // 1h
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || 604800; // 7d
+const JWT_WALLET_EXPIRES_IN = process.env.JWT_WALLET_EXPIRES_IN || 3600; // 1h
+const JWT_WALLET_REFRESH_EXPIRES_IN = process.env.JWT_WALLET_REFRESH_EXPIRES_IN || 604800; // 7d
+
 const acIscheckEmail = async (emailid: string) => {
   let result: IResult = {
     success: false,
@@ -139,11 +141,12 @@ const acLogin = async (params: any) => {
     };
 
     // 로그인 성공 시, Redis에 세션 정보 저장 (예: user_id와 로그인 시간)
-    await redisService.setData(
-      `session:${user.user_id}`,
+    const redis_00 = await redisService.getClient(0);
+    await redis_00.set(
+      `session:${user.user_id}`, 
       JSON.stringify(result.data),
-      24 * 60 * 60, // 세션 유효기간 24시간
-    );
+      { EX: Number(JWT_EXPIRES_IN)}
+    ); // 세션 유효기간 24시간  
 
     // 로그인 성공으로 인한 접속 정보 기록
   } catch (error: any) {
@@ -170,7 +173,8 @@ const acLogout = async (userId: number) => {
     conn = await getPools();
 
     // Redis에서 세션 정보 삭제
-    await redisService.setRemove(`session:${userId}`);
+    const redis_00 = await redisService.getClient(0);
+    await redis_00.del(`session:${userId}`);
     result = {
       success: true,
       message: "Logout successful.",
@@ -221,7 +225,8 @@ const acRefresh = async (params: any) => {
     const userId = reRes.uid;
 
     // Redis에서 세션 정보 확인
-    const sessionData = await redisService.getData(`session:${userId}`);
+    const redis_00 = await redisService.getClient(0);
+    const sessionData = await redis_00.get(`session:${userId}`);
     if (!sessionData) {
       result = {
         success: false,
@@ -254,11 +259,11 @@ const acRefresh = async (params: any) => {
     };
 
     // 로그인 성공 시, Redis에 세션 정보 저장 (예: user_id와 로그인 시간)
-    await redisService.setData(
+    await redis_00.set(
       `session:${session.uid}`,
       JSON.stringify(result.data),
-      24 * 60 * 60, // 세션 유효기간 24시간
-    );
+      { EX: Number(JWT_EXPIRES_IN)}
+    ); // 세션 유효기간 24시간  
 
   } catch (error: any) {
     moMessage(`masterController.acRefresh`, error?.message || error, "error");

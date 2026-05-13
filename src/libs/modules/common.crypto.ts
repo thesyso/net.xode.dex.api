@@ -1,3 +1,4 @@
+import { error } from "console";
 import crypto from "crypto";
 
 // use aes key
@@ -24,8 +25,8 @@ const csEnCryptoAES256 = (text: string): string => {
     encrypted += cipher.final('hex');
 
     return `${iv.toString("hex")}:${encrypted}`;
-  } catch (e) {
-    console.error("Encryption error:", e);
+  } catch (error: any) {
+    console.error("Encryption error:", error);
     return "";
   }
 };
@@ -60,8 +61,8 @@ const csDeCryptoAES256 = (text: string): string => {
     decrypted += decipher.final('utf8');
 
     return decrypted;
-  } catch (e) {
-    console.error("Decryption error:", e);
+  } catch (error: any) {
+    console.error("Decryption error:", error);
     return ""; // 복호화 실패 시 빈 문자열 반환
   }
 };
@@ -85,7 +86,8 @@ const csEnCryptSHA512 = (text: string, salt: string) => {
     const hashPassword = hash.digest("hex");
 
     return { errCode: 0, cryptoCode: hashPassword };
-  } catch (e) {
+  } catch (error: any) {
+    console.error("SHA512 encryption error:", error);
     return { errCode: -99, cryptoCode: "" };
   }
 };
