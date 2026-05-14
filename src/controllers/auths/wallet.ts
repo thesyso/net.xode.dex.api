@@ -8,13 +8,23 @@ import { moMessage } from "../../libs/modules/message.js";
 import { Wallet } from "../../libs/modules/utils.validate.js";
 import { verifyWalletSignature } from "../../libs/modules/utils.verifier.js";
 import { randomCryptoString } from "../../libs/modules/common.random.js";
-import { csDeCryptoAES256, csEnCryptoAES256 } from "../../libs/modules/common.crypto.js";
+import {
+  csDeCryptoAES256,
+  csEnCryptoAES256,
+} from "../../libs/modules/common.crypto.js";
 import { refresh, signWallet } from "../../libs/modules/auth.token.js";
 
 import daoWallet from "../../models/wallets/dao.wallet.js";
 import daoUserWallet from "../../models/users/dao.user.wallet.js";
 import { IUserWallet, IUser } from "../../models/users/dto.user.js";
-import { IWallet, IWalletTransaction, } from "../../models/wallets/dto.wallet.js";
+import {
+  IWallet,
+  IWalletTransaction,
+} from "../../models/wallets/dto.wallet.js";
+import {
+  IWalletSignPayLoad,
+  EnumWalletChain,
+} from "../../libs/interface/wallet.interface.js";
 
 // PROCESS: 지갑 챌린지 생성, 검증, 등록, 토큰 발급
 // 준비검토
@@ -38,12 +48,16 @@ export const acChallenge = async (params: any) => {
   }
 
   const randomKey = randomCryptoString(32);
-  const nonce = JSON.stringify({ deviceId, deviceIp, randomKey, timestamp: Math.floor(Date.now() / 1000) });
+  const nonce = JSON.stringify({
+    deviceId,
+    deviceIp,
+    randomKey,
+    timestamp: Math.floor(Date.now() / 1000),
+  });
   const nonceEncrypted = csEnCryptoAES256(nonce);
 
-
   console.log("Generated nonce:", nonceEncrypted);
-  
+
   // REDIS 에 등록 할것.
   // 1번 DB용 클라이언트를 가져와서 바로 사용 (없으면 자동 생성 및 연결)
   const redis_01 = await redisService.getClient(1);
@@ -60,20 +74,8 @@ export const acChallenge = async (params: any) => {
   return result;
 };
 
-// 검증
+// 검증은 등록 및 중복 확인 후 인증까지 진행
 export const acVerify = async (params: any) => {
-  //
-  let verifyRes = {
-    deviceIp: "",
-    deviceId: "",
-    provider: "",
-    address: "",
-    chain: "",
-    accessToken: "", //
-    refreshToken: "", //
-
-  };
-
   let result: IResult = {
     success: false,
     message:
@@ -131,8 +133,8 @@ export const acVerify = async (params: any) => {
     };
   }
 
-  params.deviceIp = nonceValidationRes.data?.deviceIp || "";
-  params.deviceId = nonceValidationRes.data?.deviceId || "";
+  let deviceIp = nonceValidationRes.data?.deviceIp || "";
+  let deviceId = nonceValidationRes.data?.deviceId || "";
 
   const resp = Wallet.addressValidate(params.chain, params.address); // This will throw if the address is invalid
   if (!resp.success) {
@@ -158,15 +160,26 @@ export const acVerify = async (params: any) => {
     };
   }
 
-  // access token, refresh token 발급
-  let accessAuth = signWallet({
-    deviceId: params.deviceId,
-    deviceIp: params.deviceIp,
+  let walletPayLoad: IWalletSignPayLoad = {
+    walletId: 0,
+    userWalletId: 0,
+    walletName: params.walletName ?? "Unnamed",
+    deviceId,
+    deviceIp,
     address: params.address,
     chain: params.chain,
-  });
+    signature: params.signature,
+    provider: params.provider,
+  };
 
-  if(!accessAuth.ok || !accessAuth.accessToken || !accessAuth.refreshToken ) {
+  // 지갑 정보 등록 및 검증, 사용자 지갑 정보 등록 및 검증
+  await recordWallet(params);
+  await removeOnlyNonce(params.nonce);
+
+  // access token, refresh token 발급
+  let reqToken = await signWallet(walletPayLoad);
+
+  if (!reqToken.ok || !reqToken.accessToken || !reqToken.refreshToken) {
     return {
       ...result,
       success: false,
@@ -178,25 +191,10 @@ export const acVerify = async (params: any) => {
     success: true,
     message: "Wallet authentication successful.",
     data: {
-      accessToken: accessAuth.accessToken,
-      refreshToken: accessAuth.refreshToken,
+      accessToken: reqToken.accessToken,
+      refreshToken: reqToken.refreshToken,
     },
   };
-
-  await recordWallet(params);
-
-  // redis 에서 논스 삭제
-  try {
-    const redis_01 = await redisService.getClient(1);
-    let nonceSplit = params.nonce.split(":");
-    if (nonceSplit.length === 3) {
-      let randomKey = nonceSplit[0];
-      await redis_01.del(randomKey);
-    }
-  } catch (error: any) {
-    moMessage(`walletController.acVerify.redis`, error?.message || error, "error");
-    // 논스 삭제 실패는 인증 실패로 간주하지 않고 진행
-  }
 
   return result;
 };
@@ -210,7 +208,7 @@ const nonceValidate = async (nonce: string): Promise<IResult> => {
 
   try {
     // 논스에서 디바이스 정보 추출
-    if(!nonce || typeof nonce !== "string") {
+    if (!nonce || typeof nonce !== "string") {
       return {
         ...result,
         success: false,
@@ -266,10 +264,12 @@ const nonceValidate = async (nonce: string): Promise<IResult> => {
       },
     };
   } catch (error: any) {
-    return { ...result, success: false, message: error?.message || "Failed to validate nonce." };
+    return {
+      ...result,
+      success: false,
+      message: error?.message || "Failed to validate nonce.",
+    };
   }
-
-
 };
 
 const recordWallet = async (params?: any) => {
@@ -281,13 +281,14 @@ const recordWallet = async (params?: any) => {
 
   let conn = null;
   let waInfo: IWallet | null = null;
+  let userWaInfo: IUserWallet | null = null;
   try {
     conn = await getPools();
 
     // 트랜잭션 시작
     conn.beginTransaction();
 
-    waInfo = await daoWallet.etDetailCoinAddress(conn, params);
+    waInfo = await daoWallet.etDetailAsOtherKey(conn, params);
 
     // 지갑 정보가 없으면 등록, 있으면 검증
     if (!waInfo) {
@@ -326,19 +327,59 @@ const recordWallet = async (params?: any) => {
           signature: params.signature,
         } as IUserWallet);
       }
+
+      userWaInfo = await daoUserWallet.etDetailByWalletId(
+        conn,
+        waInfo.wallet_id,
+      );
     }
 
     // 트랜잭션 커밋
     await conn.commit();
-    
+
+    result = {
+      data: {
+        waInfo,
+        userWaInfo,
+      },
+      success: true,
+      message: "Wallet information recorded successfully.",
+    };
   } catch (error: any) {
     moMessage(`walletController.acVerify`, error?.message || error, "error");
     if (conn) {
       await conn.rollback();
     }
+    result = {
+      success: false,
+      message: error?.message || "Failed to record wallet information.",
+    };
   } finally {
     if (conn) {
       conn.release();
     }
+  }
+
+  return result;
+};
+
+const removeOnlyNonce = async (nonce: string) => {
+  try {
+    const redis_01 = await redisService.getClient(1);
+    let nonceSplit = nonce.split(":");
+    if (nonceSplit.length === 3) {
+      let randomKey = nonceSplit[0];
+      await redis_01.del(randomKey);
+    }
+
+    return {
+      success: true,
+      message: "Nonce removed successfully.",
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || "Failed to remove nonce.",
+    };
   }
 };

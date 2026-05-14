@@ -60,6 +60,33 @@ const acDetail = async (id: number) => {
   return result;
 };
 
+const acProfile = async (address: string) => {
+  let result: IResult = {
+    success: false,
+    message: "an unknown error has occurred. If this continues, please contact your administrator."
+  };
+
+  let conn = null;
+
+  try{
+    conn = await getPools();
+    const reRes = await daoUserWallet.etDetailByAddress(conn, address);
+    result = {
+      success: true,
+      message: "",
+      data: reRes,
+      count: reRes.length || 0,
+    };
+  } catch (error: any) {
+    moMessage(`userWalletController.acProfile`, error?.message || error, "error");
+  } finally {
+    if (conn) {
+      conn.release();
+    }
+  }
+  return result;
+};
+
 // 저장
 const acSave = async (params: any) => {
   let result: IResult = {
@@ -207,6 +234,7 @@ const acRemove = async (id: number) => {
 export default {
   acList,
   acDetail,
+  acProfile,
   acSave,
   acChange,
   acPatch,

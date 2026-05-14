@@ -185,6 +185,26 @@ const etDetailByWalletId = async (conn: any, walletId: number) => {
   return await conn.query(vQuery, vParams);
 };
 
+const etDetailByAddress = async (conn: any, address: string) => {
+  var vParams = new Array();
+
+  var vQuery = `
+        SELECT 
+          uw.user_wallet_id,
+          uw.status,
+          uw.signature,
+          uw.created_at as user_wallet_created_at,
+          uw.updated_at as user_wallet_updated_at,
+          w.*
+        FROM user_wallet uw
+        LEFT OUTER JOIN wallet w ON uw.wallet_id = w.wallet_id
+        WHERE uw.address = ?
+    `;
+  vParams.push(address);
+
+  return await conn.query(vQuery, vParams);
+};
+
 // create
 const etSave = async (conn: any, params: any) => {
   var vParams = new Array();
@@ -257,6 +277,7 @@ export default {
   etDetail,
   etDetailInWallet,
   etDetailByWalletId,
+  etDetailByAddress,
   etSave,
   etChange,
   etPatchStatus,

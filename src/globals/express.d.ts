@@ -7,6 +7,7 @@ declare global {
       agentAuth?: any;
       masterAuth?: any;
       memberAuth?: any;
+      walletAuth?: any;
     }
   }
 }

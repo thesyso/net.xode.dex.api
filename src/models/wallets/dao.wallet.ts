@@ -98,7 +98,7 @@ const etDetail = async (conn: any, id: number) => {
   return await conn.query(vQuery, vParams);
 };
 
-const etDetailCoinAddress = async (conn: any, params: any) => {
+const etDetailAsOtherKey = async (conn: any, params: any) => {
   var vParams = new Array();
 
   var vQuery = `
@@ -177,7 +177,7 @@ export default {
   etCount,
   etList,
   etDetail,
-  etDetailCoinAddress,
+  etDetailAsOtherKey,
   etSave,
   etChange,
   // etPatch,

@@ -39,7 +39,7 @@ const ethereumVerifier = async (
 
     recoveredAddress = getAddress(resp);
     requestedAddress = getAddress(address);
-
+   
     if (recoveredAddress !== requestedAddress) {
       result = {
         success: false,
@@ -76,8 +76,10 @@ const substrateVerifier = async (
   };
 
   try {
-    let resp = signatureVerify(message, signature, address);
+    console.log("message", message , signature, address);
 
+    let resp = signatureVerify(message, signature, address);
+    console.log("resp", resp);
     if (resp.isValid) {
       result = {
         success: true,

@@ -3,6 +3,10 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 
 import { IResult, IResultRefresh } from "../interface/result.interface";
 
+import { redisService } from "../redis.ins";
+import { IWalletSignPayLoad, EnumWalletChain, IResVerifyWallet } from "../interface/wallet.interface";
+import wallet from "../../controllers/wallets/wallet";
+
 const secretAccessKey = process.env.JWT_SECRET_KEY || "6BEDlGinwwJZKOpDtxH4yz0Pk6foUyHa";
 const secretRefreshKey = process.env.JWT_REFRESH_SECRET_KEY || "lh1x0rg3BtCK9GVvr9tvqt4elZtB6lsT";
 
@@ -141,7 +145,7 @@ export const refreshVerify = (refreshToken: string) => {
 }
  */
 
-export const signWallet = (payLoad: any) => {
+export const signWallet = async (payLoad: IWalletSignPayLoad) => {
   try{
     const accessToken = jwt.sign(payLoad, secretWalletKey, {
       algorithm: "HS256",
@@ -152,6 +156,14 @@ export const signWallet = (payLoad: any) => {
       algorithm: "HS256",
       expiresIn: parseInt(walletRefreshLimit),
     });
+
+    const redis_00 = await redisService.getClient(0);
+    // 디바이스별로 refresh token 저장 (예: auth:wallet:{address}:{chain}:{deviceId} 키로 저장)
+    await redis_00.set(
+      `auth:wallet:${payLoad.address}:${payLoad.chain}:${payLoad.deviceId}`, 
+      refreshToken, 
+      { EX: parseInt(walletRefreshLimit) }
+    ); 
 
     return {
       ok: true,
@@ -170,29 +182,44 @@ export const signWallet = (payLoad: any) => {
 
 export const verifyWallet = (accessToken: string) => {
   let decoded: any;
+  let resVerify: IResVerifyWallet = {
+    ok: false,
+    message: "Invalid token.",
+    address: null,
+    chain: null,
+    deviceId: null,
+    deviceIp: null,
+    mode: "access"
+  };
+  
   try {
     decoded = jwt.verify(accessToken, secretWalletKey);
-    return {
-      ok: true,
-      address: decoded.address,
-      chain: decoded.chain,
-      deviceId: decoded.deviceId,
-      deviceIp: decoded.deviceIp
-    };
+    resVerify.ok = true;
+    resVerify.message = "Wallet token is valid.";
+    resVerify.address = decoded.address;
+    resVerify.chain = decoded.chain;
+    resVerify.deviceId = decoded.deviceId;
+    resVerify.deviceIp = decoded.deviceIp;
+    
   } catch (err: any) {
-    return {
-      ok: false,
-      message: err.message,
-      address: null,
-      chain: null,
-      deviceId: null,
-      deviceIp: null
-    };
+    resVerify.ok = false;
+    resVerify.message = err.message;
   }
+  return resVerify;
 }
 
 export const refreshVerifyWallet = (refreshToken: string) => {
   let decoded: any;
+  let resVerify: IResVerifyWallet = {
+    ok: false,
+    message: "Invalid token.",
+    address: null,
+    chain: null,
+    deviceId: null,
+    deviceIp: null,
+    mode: "refresh"
+  };
+
   const result: IResultRefresh = {
     ok: false,
     message:
@@ -202,19 +229,18 @@ export const refreshVerifyWallet = (refreshToken: string) => {
 
   try {
     decoded = jwt.verify(refreshToken, refreshWalletKey);
-    return {
-      ok: true,
-      address: decoded.address,
-      chain: decoded.chain,
-      deviceId: decoded.deviceId,
-      deviceIp: decoded.deviceIp
-    };
+    resVerify.ok = true;
+    resVerify.message = "Refresh wallet token is valid.";
+    resVerify.address = decoded.address;
+    resVerify.chain = decoded.chain;
+    resVerify.deviceId = decoded.deviceId;
+    resVerify.deviceIp = decoded.deviceIp;
   }
     catch (err: any) {
-    result.ok = false;
-    result.message = err.message;
+      resVerify.ok = false;
+      resVerify.message = err.message;
   }
-  return result;
+  return resVerify;
 };
 
 export default {

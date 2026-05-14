@@ -5,6 +5,11 @@ import masterController from "../../../controllers/auths/master";
 
 import { IResult } from "../../../libs/interface/result.interface";
 import { acVerify, acChallenge } from "../../../controllers/auths/wallet";
+import userWallet from "../../../controllers/users/user.wallet";
+import { mwWalletAuthJWT } from "../../../mwares/mwAuth";
+import { IResVerifyWallet } from "../../../libs/interface/wallet.interface";
+import { IResVerifyWallet } from "../../../libs/interface/wallet.interface";
+import { refreshVerifyWallet } from "../../../libs/modules/auth.token";
 
 const router = express.Router();
 
@@ -24,7 +29,7 @@ router.get('/', async (req, res) => {
     "connectIp": "192.168.0.1"
 }
 */
-router.get('/challenge', async (req, res) => {
+router.post('/challenge', async (req, res) => {
   let result: IResult = {
     success: false,
     message:
@@ -128,15 +133,77 @@ router.post('/refresh', async (req, res) => {
       errCode: 999,
       errMessage: "an unknown error has occurred. If this continues, please contact your administrator."
   };
+
+  if (req.headers.authorization) {
+    const refreshToken = req.headers.authorization.split("Bearer ")[1]; // header에서 refresh token을 가져옵니다.
+    const resVerify: IResVerifyWallet = refreshVerifyWallet(refreshToken); // token을 검증합니다.
+
+    if (resVerify.ok) {
+      // access token, refresh token 발급
+      const payLoad = {
+        address: resVerify.address || "",
+        chain: resVerify.chain || "",
+        deviceId: resVerify.deviceId || "",
+        deviceIp: resVerify.deviceIp || "",
+        walletName: "Unnamed",
+        provider: "Unknown"
+      };
+      
+      resJson = {
+        errCode: 0,
+        errMessage: "Wallet token is valid.",
+        ...resVerify
+      };
+      return res.status(200).json(resJson);
+    } else {
+      resJson = {
+        errCode: 1,
+        errMessage: resVerify.message || "Wallet token is invalid."
+      };
+      return res.status(401).json(resJson);
+    }
+  } else {
+    res.status(403).send({
+      errCode: 403,
+      errMessage: "no authentication information.",
+    });
+  }
 });
 
-router.post('/logout', async (req, res) => {
+router.post('/logout', mwWalletAuthJWT, async (req, res) => {
   let resJson = {
       errCode: 999,
       errMessage: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 });
 
+router.get("/profile", mwWalletAuthJWT, async (req, res) => {
+  let resJson = {
+      errCode: 999,
+      errMessage: "an unknown error has occurred. If this continues, please contact your administrator."
+  };
 
+  let sParams = {
+    address: req.walletAuth?.address ? req.walletAuth.address.toString() : "",
+    chain: req.walletAuth?.chain ? req.walletAuth.chain.toString() : "",
+  }
+
+  const resp = await userWallet.acProfile(sParams);
+
+  if (resp.success) {
+    resJson = {
+      errCode: 0,
+      errMessage: "Wallet authentication successful.",
+      ...resp.data
+    };
+    return res.status(200).json(resJson);
+  } else {
+    resJson = {
+      errCode: 1,
+      errMessage: resp.message || "Wallet authentication failed."
+    };
+    return res.status(401).json(resJson);
+  }
+});
 
 export default router;
