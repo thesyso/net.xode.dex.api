@@ -6,7 +6,7 @@ CREATE TABLE `user` (
   `signature` varchar(256) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `wallet_mode` varchar(100) NOT NULL,
+  `wallet_chain` varchar(100) NOT NULL,
   `wallet_name` varchar(32) NOT NULL,
   `wallet_provider` varchar(100) DEFAULT NULL,
   `status` tinyint(4) DEFAULT 0,
@@ -33,32 +33,41 @@ CREATE TABLE `user` (
  */
 export interface IUser {
   user_id: number;
-  wallet_address: string;
-  wallet_message: string;
+  address: string;
+  message: string;
   signature: string;
   created_at: Date;
   updated_at: Date;
-  wallet_mode: string;
-  wallet_name: string;
-  wallet_provider: string | null;
-  status: number; // 0 : 가입,1 : 일반, 5 : 인증회원, 7 : 정지회원, 9 : 탈퇴회원
-  emailid: string | null;
-  password: string | null;
-  salt: string | null;
-  email: string | null;
-  username: string | null;
-  nickname: string | null;
-  nation_no: string | null;
-  location: string | null;
-  language: string | null;
-  user_address: string | null;
-  address_detail: string | null;
-  zipcode: string | null;
-  is_confirm: boolean;
-  is_real: boolean;
-  is_otp: boolean;
-  connected_ip: string | null;
-  connected_at: Date;
+  mode: string;
+  name: string;
+  provider: string | null;
+  // user_id: number;
+  // wallet_address: string;
+  // wallet_message: string;
+  // signature: string;
+  // created_at: Date;
+  // updated_at: Date;
+  // wallet_chain: string;
+  // wallet_name: string;
+  // wallet_provider: string | null;
+  // status: number; // 0 : 가입,1 : 일반, 5 : 인증회원, 7 : 정지회원, 9 : 탈퇴회원
+  // emailid: string | null;
+  // password: string | null;
+  // salt: string | null;
+  // email: string | null;
+  // username: string | null;
+  // nickname: string | null;
+  // nation_no: string | null;
+  // location: string | null;
+  // language: string | null;
+  // user_address: string | null;
+  // address_detail: string | null;
+  // zipcode: string | null;
+  // is_confirm: boolean;
+  // is_real: boolean;
+  // is_otp: boolean;
+  // connected_ip: string | null;
+  // connected_at: Date;
 }
 
 /**

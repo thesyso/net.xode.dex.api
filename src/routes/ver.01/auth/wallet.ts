@@ -1,15 +1,9 @@
 import express from "express";
-import jwt from "jsonwebtoken";
-
-import masterController from "../../../controllers/auths/master";
 
 import { IResult } from "../../../libs/interface/result.interface";
-import { acVerify, acChallenge } from "../../../controllers/auths/wallet";
+import { acLogin, acChallenge, acRefresh, acLogout } from "../../../controllers/auths/wallet";
 import userWallet from "../../../controllers/users/user.wallet";
 import { mwWalletAuthJWT } from "../../../mwares/mwAuth";
-import { IResVerifyWallet } from "../../../libs/interface/wallet.interface";
-import { IResVerifyWallet } from "../../../libs/interface/wallet.interface";
-import { refreshVerifyWallet } from "../../../libs/modules/auth.token";
 
 const router = express.Router();
 
@@ -56,9 +50,9 @@ router.post('/challenge', async (req, res) => {
 }
  */
 router.post('/login', async (req, res) => {
-  let resJson = {
-      errCode: 999,
-      errMessage: "an unknown error has occurred. If this continues, please contact your administrator."
+  let result: IResult = {
+      success: false,
+      message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 
   const sParmas = {
@@ -71,27 +65,30 @@ router.post('/login', async (req, res) => {
     coinCode : req.body?.coinCode ? req.body.coinCode.toString() : ""
   }
   
-  const resp = await acVerify(sParmas);
+  const resp = await acLogin(sParmas);
 
   if (resp.success) {
-    resJson = {
-      errCode: 0,
-      errMessage: "Wallet authentication successful.",
-      ...resp.data
+    result = {
+      success: true,
+      message: "Wallet authentication successful.",
+      data: {
+        ...resp.data
+      }
     };
-    return res.status(200).json(resJson);
+    return res.status(200).json(result);
   } else {
-    resJson = {
-      errCode: 1,
-      errMessage: resp.message || "Wallet authentication failed."
+    result = {
+      success: false,
+      message: resp.message || "Wallet authentication failed."
     };
-    return res.status(401).json(resJson);
+    return res.status(401).json(result);
   }
 });
+// login is same
 router.post('/verify', async (req, res) => {
-  let resJson = {
-      errCode: 999,
-      errMessage: "an unknown error has occurred. If this continues, please contact your administrator."
+  let result: IResult = {
+      success: false,
+      message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 
   const sParmas = {
@@ -104,21 +101,23 @@ router.post('/verify', async (req, res) => {
     coinCode : req.body?.coinCode ? req.body.coinCode.toString() : ""
   }
   
-  const resp = await acVerify(sParmas);
+  const resp = await acLogin(sParmas);
 
   if (resp.success) {
-    resJson = {
-      errCode: 0,
-      errMessage: "Wallet authentication successful.",
-      ...resp.data
+    result = {
+      success: true,
+      message: "Wallet authentication successful.",
+      data: {
+        ...resp.data
+      }
     };
-    return res.status(200).json(resJson);
+    return res.status(200).json(result);
   } else {
-    resJson = {
-      errCode: 1,
-      errMessage: resp.message || "Wallet authentication failed."
+    result = {
+      success: false,
+      message: resp.message || "Wallet authentication failed."
     };
-    return res.status(401).json(resJson);
+    return res.status(401).json(result);
   }
 });
 /**
@@ -129,58 +128,75 @@ payload:
 }
  */
 router.post('/refresh', async (req, res) => {
-  let resJson = {
-      errCode: 999,
-      errMessage: "an unknown error has occurred. If this continues, please contact your administrator."
+  let result: IResult = {
+      success: false,
+      message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 
+   
   if (req.headers.authorization) {
     const refreshToken = req.headers.authorization.split("Bearer ")[1]; // header에서 refresh token을 가져옵니다.
-    const resVerify: IResVerifyWallet = refreshVerifyWallet(refreshToken); // token을 검증합니다.
-
-    if (resVerify.ok) {
-      // access token, refresh token 발급
-      const payLoad = {
-        address: resVerify.address || "",
-        chain: resVerify.chain || "",
-        deviceId: resVerify.deviceId || "",
-        deviceIp: resVerify.deviceIp || "",
-        walletName: "Unnamed",
-        provider: "Unknown"
+    const resRefresh = await acRefresh({ refreshToken }); // refresh token을 검증하고 새로운 access token과 refresh token을 발급합니다.
+    if (resRefresh.success) {
+      result = {
+        success: true,
+        message: "Wallet token is valid.",
+        data: {
+          ...resRefresh.data
+        }
       };
-      
-      resJson = {
-        errCode: 0,
-        errMessage: "Wallet token is valid.",
-        ...resVerify
-      };
-      return res.status(200).json(resJson);
+      return res.status(200).json(result);
     } else {
-      resJson = {
-        errCode: 1,
-        errMessage: resVerify.message || "Wallet token is invalid."
+      result = {
+        success: false,
+        message: resRefresh.message || "Wallet token is invalid."
       };
-      return res.status(401).json(resJson);
+      return res.status(401).json(result);
     }
   } else {
     res.status(403).send({
-      errCode: 403,
-      errMessage: "no authentication information.",
+      success: false,
+      message: "no authentication information.",
     });
   }
 });
 
 router.post('/logout', mwWalletAuthJWT, async (req, res) => {
-  let resJson = {
-      errCode: 999,
-      errMessage: "an unknown error has occurred. If this continues, please contact your administrator."
+  let result: IResult = {
+      success: false,
+      message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
+
+  // 로그아웃 처리 (예: Redis에서 토큰 삭제)
+  if(!req.walletAuth) {
+    result = {
+      success: false,
+      message: "No wallet authentication information found."
+    };
+    return res.status(401).json(result);
+  }
+
+  const resLogout = await acLogout(req.walletAuth.address, req.walletAuth.chain, req.walletAuth.deviceId);
+  if (!resLogout.success) {
+    result = {
+      success: false,
+      message: resLogout.message || "Failed to logout."
+    };
+    return res.status(500).json(result);
+  }
+
+  result = {
+    success: true,
+    message: "Logout successful."
+  };
+  return res.status(200).json(result);
+  
 });
 
 router.get("/profile", mwWalletAuthJWT, async (req, res) => {
-  let resJson = {
-      errCode: 999,
-      errMessage: "an unknown error has occurred. If this continues, please contact your administrator."
+  let result: IResult = {
+      success: false,
+      message: "an unknown error has occurred. If this continues, please contact your administrator."
   };
 
   let sParams = {
@@ -188,21 +204,23 @@ router.get("/profile", mwWalletAuthJWT, async (req, res) => {
     chain: req.walletAuth?.chain ? req.walletAuth.chain.toString() : "",
   }
 
-  const resp = await userWallet.acProfile(sParams);
+  const resp = await userWallet.acProfile(sParams.address, sParams.chain);
 
   if (resp.success) {
-    resJson = {
-      errCode: 0,
-      errMessage: "Wallet authentication successful.",
-      ...resp.data
+    result = {
+      success: true,
+      message: "Wallet authentication successful.",
+      data: {
+        ...resp.data
+      }
     };
-    return res.status(200).json(resJson);
+    return res.status(200).json(result);
   } else {
-    resJson = {
-      errCode: 1,
-      errMessage: resp.message || "Wallet authentication failed."
+    result = {
+      success: false,
+      message: resp.message || "Wallet authentication failed."
     };
-    return res.status(401).json(resJson);
+    return res.status(401).json(result);
   }
 });
 

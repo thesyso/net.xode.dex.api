@@ -12,7 +12,11 @@ import {
   csDeCryptoAES256,
   csEnCryptoAES256,
 } from "../../libs/modules/common.crypto.js";
-import { refresh, signWallet } from "../../libs/modules/auth.token.js";
+import {
+  refresh,
+  refreshVerifyWallet,
+  signWallet,
+} from "../../libs/modules/auth.token.js";
 
 import daoWallet from "../../models/wallets/dao.wallet.js";
 import daoUserWallet from "../../models/users/dao.user.wallet.js";
@@ -75,7 +79,7 @@ export const acChallenge = async (params: any) => {
 };
 
 // 검증은 등록 및 중복 확인 후 인증까지 진행
-export const acVerify = async (params: any) => {
+export const acLogin = async (params: any) => {
   let result: IResult = {
     success: false,
     message:
@@ -145,25 +149,29 @@ export const acVerify = async (params: any) => {
     };
   }
 
-  const signatureVerification = await verifyWalletSignature(
-    params.chain,
-    params.nonce,
-    params.signature,
-    params.address,
-  );
+  // const signatureVerification = await verifyWalletSignature(
+  //   params.chain,
+  //   params.nonce,
+  //   params.signature,
+  //   params.address,
+  // );
 
-  if (!signatureVerification.success) {
-    return {
-      ...result,
-      success: false,
-      message: signatureVerification.message,
-    };
-  }
+  // if (!signatureVerification.success) {
+  //   return {
+  //     ...result,
+  //     success: false,
+  //     message: signatureVerification.message,
+  //   };
+  // }
 
+  // 지갑 정보 등록 및 검증, 사용자 지갑 정보 등록 및 검증
+  // walletId: waInfo?.wallet_id,
+  // userWalletId: userWaInfo?.wallet_id,
+  const resRecordWallet = await recordWallet(params);
   let walletPayLoad: IWalletSignPayLoad = {
-    walletId: 0,
-    userWalletId: 0,
-    walletName: params.walletName ?? "Unnamed",
+    walletId: resRecordWallet.data?.wallet?.wallet_id || 0,
+    userWalletId: resRecordWallet.data?.userWallet?.wallet_id || 0,
+    walletName: resRecordWallet.data?.wallet?.wallet_name || "Unnamed",
     deviceId,
     deviceIp,
     address: params.address,
@@ -172,9 +180,7 @@ export const acVerify = async (params: any) => {
     provider: params.provider,
   };
 
-  // 지갑 정보 등록 및 검증, 사용자 지갑 정보 등록 및 검증
-  await recordWallet(params);
-  await removeOnlyNonce(params.nonce);
+  const resRemoveNonce = await removeOnlyNonce(params.nonce);
 
   // access token, refresh token 발급
   let reqToken = await signWallet(walletPayLoad);
@@ -199,6 +205,124 @@ export const acVerify = async (params: any) => {
   return result;
 };
 
+export const acRefresh = async (params: any) => {
+  let result: IResult = {
+    success: false,
+    message:
+      "an unknown error has occurred. If this continues, please contact your administrator.",
+    data: {},
+  };
+
+  if (!params.refreshToken) {
+    return {
+      ...result,
+      success: false,
+      message: "Refresh token is required.",
+    };
+  }
+
+  const resVerify = await refreshVerifyWallet(params.refreshToken);
+
+  if (!resVerify.ok) {
+    return {
+      ...result,
+      success: false,
+      message: resVerify.message,
+    };
+  }
+
+  // access token, refresh token 의 payload는 동일하므로 검증된 정보를 활용하여 토큰을 재발급합니다.
+  const walletPayLoad: IWalletSignPayLoad = {
+    walletId: resVerify.walletId,
+    userWalletId: resVerify.userWalletId,
+    walletName: resVerify.walletName || "Unnamed",
+    deviceId: resVerify.deviceId || "",
+    deviceIp: resVerify.deviceIp || "",
+    address: resVerify.address || "",
+    chain: resVerify.chain || "",
+    signature: resVerify.signature || "",
+    provider: resVerify.provider || "Unknown",
+  };
+
+  // redis 에서 검증된 정보로 토큰 재발급
+  const redis_00 = await redisService.getClient(0);
+  const redisKey = `auth:device:${walletPayLoad.deviceId}:chain:${walletPayLoad.chain}:wallet:${walletPayLoad.address}`;
+  const storedData = await redis_00.get(redisKey);
+  if (!storedData || storedData !== params.refreshToken) {
+    return {
+      ...result,
+      success: false,
+      message: "No matching session found. Please log in again.",
+    };
+  }
+
+  // access token, refresh token 발급
+  let reqToken = await signWallet(walletPayLoad);
+
+  if (!reqToken.ok || !reqToken.accessToken || !reqToken.refreshToken) {
+    return {
+      ...result,
+      success: false,
+      message: "Failed to generate tokens.",
+    };
+  }
+
+  await redis_00.set(redisKey, reqToken.refreshToken, { EX: 7 * 24 * 60 * 60 }); // refresh token 유효기간 설정 (예: 7일)
+  result = {
+    success: true,
+    message: "Wallet authentication successful.",
+    data: {
+      accessToken: reqToken.accessToken,
+      refreshToken: reqToken.refreshToken,
+    },
+  };
+
+  return result;
+};
+
+export const acLogout = async (
+  address: string,
+  chain: string,
+  deviceId: string,
+) => {
+  let result: IResult = {
+    success: false,
+    message:
+      "an unknown error has occurred. If this continues, please contact your administrator.",
+    data: {},
+  };
+
+  if (!address || !chain || !deviceId) {
+    return {
+      ...result,
+      success: false,
+      message: "Address, chain, and deviceId are required.",
+    };
+  }
+
+  const redis_00 = await redisService.getClient(0);
+  const redisKey = `auth:device:${deviceId}:chain:${chain}:wallet:${address}`;
+  
+  const resDel = await redis_00.del(redisKey); // Redis에서 세션 정보 삭제
+  if (resDel === 0) {
+    return {
+      ...result,
+      success: false,
+      message: "Failed to logout. Session may not exist.",
+    };
+  } else {
+    return {
+      ...result,
+      success: true,
+      message: "Logout successful.",
+    };
+  }
+};
+/**
+ *
+ * @param nonce
+ * @returns
+ */
 const nonceValidate = async (nonce: string): Promise<IResult> => {
   let result: IResult = {
     success: false,
@@ -272,6 +396,11 @@ const nonceValidate = async (nonce: string): Promise<IResult> => {
   }
 };
 
+/**
+ *
+ * @param params
+ * @returns
+ */
 const recordWallet = async (params?: any) => {
   let result: IResult = {
     success: false,
@@ -287,34 +416,44 @@ const recordWallet = async (params?: any) => {
 
     // 트랜잭션 시작
     conn.beginTransaction();
-
-    waInfo = await daoWallet.etDetailAsOtherKey(conn, params);
+    // vParams.push(params.mainnet, params.coin_code, params.address);
+    let resWallet = await daoWallet.etDetailAsOtherKey(conn, {
+      mainnet: params.chain === "ethereum" ? "ETHEREUM" : "POLKADOT",
+      coin_code: params.coinCode,
+      address: params.address,
+    });
 
     // 지갑 정보가 없으면 등록, 있으면 검증
-    if (!waInfo) {
+    if (!resWallet || resWallet.length === 0) {
+      console.log("No existing wallet found. Registering new wallet.");
+
       // 등록
-      result = await daoWallet.etSave(conn, {
+      const resWalletSave = await daoWallet.etSave(conn, {
         chain: params.chain,
-        wallet_class: params.provider ?? "UNKNOWN",
-        wallet_mode: params.chain === "ethereum" ? "EVM" : "SUBSTRATE",
+        wallet_class: params.provider?.toUpperCase() ?? "UNKNOWN",
+        wallet_chain: params.chain === "ethereum" ? "EVM" : "SUBSTRATE",
         wallet_name: params.walletName ?? "Unnamed",
-        mainnet: params.walletName ?? "Mainnet",
+        mainnet: params.chain === "ethereum" ? "ETHEREUM" : "POLKADOT",
         coin_code: params.coinCode ?? "UNKNOWN",
         address: params.address,
         address_memo: params.addressMemo ?? "",
       });
 
       // 등록 후 정보 조회
-      waInfo = await daoWallet.etDetail(conn, result.data?.insertId);
+      resWallet = await daoWallet.etDetail(conn, resWalletSave.insertId);
+
     }
 
+    waInfo = resWallet[0];
+    console.log("Wallet info:", waInfo);
+
     if (waInfo) {
-      let userWalletInfo = await daoUserWallet.etDetailByWalletId(
+      let resUserWallet = await daoUserWallet.etDetailByWalletId(
         conn,
         waInfo.wallet_id,
       );
 
-      if (!userWalletInfo) {
+      if (!resUserWallet || resUserWallet.length === 0) {
         await daoUserWallet.etSave(conn, {
           wallet_id: waInfo.wallet_id,
           status: 1,
@@ -328,10 +467,13 @@ const recordWallet = async (params?: any) => {
         } as IUserWallet);
       }
 
-      userWaInfo = await daoUserWallet.etDetailByWalletId(
+      resUserWallet = await daoUserWallet.etDetailByWalletId(
         conn,
         waInfo.wallet_id,
       );
+
+      userWaInfo = resUserWallet[0];
+      console.log("User wallet info:", userWaInfo);
     }
 
     // 트랜잭션 커밋
@@ -339,8 +481,8 @@ const recordWallet = async (params?: any) => {
 
     result = {
       data: {
-        waInfo,
-        userWaInfo,
+        wallet: waInfo,
+        userWallet: userWaInfo,
       },
       success: true,
       message: "Wallet information recorded successfully.",
@@ -363,6 +505,11 @@ const recordWallet = async (params?: any) => {
   return result;
 };
 
+/**
+ *
+ * @param nonce
+ * @returns
+ */
 const removeOnlyNonce = async (nonce: string) => {
   try {
     const redis_01 = await redisService.getClient(1);

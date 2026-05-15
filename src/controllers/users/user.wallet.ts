@@ -60,7 +60,7 @@ const acDetail = async (id: number) => {
   return result;
 };
 
-const acProfile = async (address: string) => {
+const acProfile = async (address: string, chain: string) => {
   let result: IResult = {
     success: false,
     message: "an unknown error has occurred. If this continues, please contact your administrator."
@@ -70,7 +70,7 @@ const acProfile = async (address: string) => {
 
   try{
     conn = await getPools();
-    const reRes = await daoUserWallet.etDetailByAddress(conn, address);
+    const reRes = await daoUserWallet.etDetailByAddress(conn, address, chain);
     result = {
       success: true,
       message: "",

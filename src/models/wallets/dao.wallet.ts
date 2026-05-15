@@ -19,7 +19,7 @@ const etList = async (conn: any, params: any) => {
   //
   var srUsed = params.srUsed ? params.srUsed : "";
   var srWalletClass = params.srWalletClass ? params.srWalletClass : "";
-  var srWalletMode = params.srWalletMode ? params.srWalletMode : "";
+  var srWalletChain = params.srWalletChain ? params.srWalletChain : "";
 
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
@@ -39,9 +39,9 @@ const etList = async (conn: any, params: any) => {
     vQuery = vQuery + ` AND w.wallet_class = ?`;
   }
 
-  if (srWalletMode) {
-    vParams.push(srWalletMode);
-    vQuery = vQuery + ` AND w.wallet_mode = ?`;
+  if (srWalletChain) {
+    vParams.push(srWalletChain);
+    vQuery = vQuery + ` AND w.wallet_chain = ?`;
   }
 
   // where : sr srtxt
@@ -118,7 +118,7 @@ const etSave = async (conn: any, params: any) => {
   var vQuery = `
         INSERT INTO wallet (
           wallet_class,
-          wallet_mode,
+          wallet_chain,
           wallet_name,
           mainnet,
           coin_code,
@@ -129,7 +129,7 @@ const etSave = async (conn: any, params: any) => {
     `;
   vParams.push(
     params.wallet_class,
-    params.wallet_mode,
+    params.wallet_chain,
     params.wallet_name,
     params.mainnet,
     params.coin_code,
@@ -145,13 +145,13 @@ const etChange = async (conn: any, params: any) => {
   var vQuery = `
     UPDATE wallet SET
       wallet_class = ?,
-      wallet_mode = ?,
+      wallet_chain = ?,
       wallet_name = ?
     WHERE wallet_id = ?
 `;
   vParams.push(
     params.wallet_class,
-    params.wallet_mode,
+    params.wallet_chain,
     params.wallet_name,   
     params.wallet_id
   );

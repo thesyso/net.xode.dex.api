@@ -71,18 +71,13 @@ export const mwWalletAuthJWT = async (
 
     if (resVerify.ok) {
       // token이 검증되었으면 req에 값을 세팅하고, 다음 콜백함수로 갑니다.
-      if (resVerify.address)
-        resVerify.address = resVerify.address.toLowerCase();
-      if (resVerify.chain) resVerify.chain = resVerify.chain.toLowerCase();
 
       if (resVerify.address && resVerify.chain) {
         req.walletAuth = {
-          address: resVerify.address,
-          chain: resVerify.chain,
-          deviceId: resVerify.deviceId,
-          deviceIp: resVerify.deviceIp,
+          ...resVerify,
           nation: "ko",
         };
+
         next();
       } else {
         return res.status(403).send({

@@ -2,7 +2,7 @@
 CREATE TABLE `wallet` (
   `wallet_id` int(11) NOT NULL AUTO_INCREMENT,
   `wallet_class` varchar(16) NOT NULL COMMENT 'METAMASK, SUBWALLET, NOVAWALLET, UNISWAP...',
-  `wallet_mode` varchar(16) NOT NULL COMMENT 'W3, CEX, DEX, HW, ETC',
+  `wallet_chain` varchar(16) NOT NULL COMMENT 'W3, CEX, DEX, HW, ETC',
   `wallet_name` varchar(32) NOT NULL COMMENT 'default',
   `mainnet` varchar(16) NOT NULL,
   `coin_code` varchar(16) NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE `wallet` (
 export interface IWallet {
   wallet_id: number;
   wallet_class: string;
-  wallet_mode: string;
+  wallet_chain: string;
   wallet_name: string;
   mainnet: string;
   coin_code: string;

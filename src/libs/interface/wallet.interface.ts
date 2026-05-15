@@ -20,12 +20,8 @@ export interface IWalletAuth extends IWalletSignPayLoad {
     refreshToken: string
 }
 
-export interface IResVerifyWallet {
+export interface IResVerifyWallet extends IWalletSignPayLoad {
     ok: boolean,
     message: string,
-    mode?: string,
-    address?: string | null,
-    chain?: string | null,
-    deviceId?: string | null,
-    deviceIp?: string | null
+    mode?: "access" | "refresh"
 }

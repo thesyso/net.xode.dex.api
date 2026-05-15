@@ -1,3 +1,5 @@
+import { EnumWalletChain } from "../../libs/interface/wallet.interface";
+
 const etCount = async (conn: any) => {
   var vQuery = `SELECT FOUND_ROWS() as count`;
   return await conn.query(vQuery);
@@ -83,7 +85,7 @@ const etListInWallet = async (conn: any, params: any) => {
         SELECT SQL_CALC_FOUND_ROWS 
           uw.*,
           w.wallet_class,
-          w.wallet_mode,
+          w.wallet_chain,
           w.wallet_name,
           w.mainnet,
           w.coin_code,
@@ -156,7 +158,7 @@ const etDetailInWallet = async (conn: any, id: number) => {
         SELECT 
           uw.*,
           w.wallet_class,
-          w.wallet_mode,
+          w.wallet_chain,
           w.wallet_name,
           w.mainnet,
           w.coin_code,
@@ -185,7 +187,7 @@ const etDetailByWalletId = async (conn: any, walletId: number) => {
   return await conn.query(vQuery, vParams);
 };
 
-const etDetailByAddress = async (conn: any, address: string) => {
+const etDetailByAddress = async (conn: any, address: string, chain: string) => {
   var vParams = new Array();
 
   var vQuery = `
@@ -198,9 +200,9 @@ const etDetailByAddress = async (conn: any, address: string) => {
           w.*
         FROM user_wallet uw
         LEFT OUTER JOIN wallet w ON uw.wallet_id = w.wallet_id
-        WHERE uw.address = ?
+        WHERE w.address = ? AND w.mainnet = ?
     `;
-  vParams.push(address);
+  vParams.push(address, chain);
 
   return await conn.query(vQuery, vParams);
 };
