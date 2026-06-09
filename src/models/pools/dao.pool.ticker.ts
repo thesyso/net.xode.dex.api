@@ -46,10 +46,12 @@ const etList = async (conn: any, params: any) => {
       ` AND pt.ticker_date < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
+  vQuery = vQuery + ` ORDER BY pt.ticker_id DESC `;
+  
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
-  vQuery = vQuery + ` ORDER BY pt.ticker_id DESC `;
+
 
   return await conn.query(vQuery, vParams);
 };

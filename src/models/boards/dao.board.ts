@@ -76,11 +76,12 @@ const etList = async (conn: any, params: any) => {
     vQuery = vQuery + ` AND b.status = ?`;
   }
 
+  vQuery = vQuery + ` ORDER BY b.board_id DESC `;
+
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
-  vQuery = vQuery + ` ORDER BY b.board_id DESC `;
-  console.log(vQuery, vParams);
+
   return await conn.query(vQuery, vParams);
 };
 

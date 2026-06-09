@@ -61,11 +61,12 @@ const etList = async (conn: any, params: any) => {
       ` AND sc.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
+  vQuery = vQuery + ` ORDER BY sc.content_id DESC `;
+  
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
-  vQuery = vQuery + ` ORDER BY sc.content_id DESC `;
-  console.log(vQuery, vParams);
+
   return await conn.query(vQuery, vParams);
 };
 // 상세조회

@@ -60,10 +60,11 @@ const etList = async (conn: any, params: any) => {
       ` AND t.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
+  vQuery = vQuery + ` ORDER BY t.transaction_id DESC `;
+  
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;
-  vQuery = vQuery + ` ORDER BY t.transaction_id DESC `;
 
   return await conn.query(vQuery, vParams);
 };

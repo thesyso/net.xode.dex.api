@@ -5,6 +5,7 @@ import poolControllers from "../../../../controllers/pools/pool.js";
 const router = express.Router();
 
 router.get("/", async (req, res) => {
+  console.log("req.query", req.query);
   let sParams = {
     page: req.query?.page ? parseInt(req.query.page.toString()) : 1,
     pageRow: req.query?.pageRow ? parseInt(req.query.pageRow.toString()) : 10,

@@ -12,15 +12,13 @@ const etList = async (conn: any, params: any) => {
   var sr = params.sr ? params.sr : 0;
   var srTxt = params.srTxt?.length > 0 ? `%` + params.srTxt + `%` : "";
 
-  var srBeginDate = new Date(
-    !isNaN(params.srBeginDate) ? params.srBeginDate : null,
-  );
-  var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
+  var srBeginDate = !isNaN(params.srBeginDate) && params.srBeginDate ? new Date(params.srBeginDate) : null;
+  var srEndDate = !isNaN(params.srEndDate) && params.srEndDate ? new Date(params.srEndDate) : null;
 
   var srUsed = params.srUsed ? params.srUsed : "";
   var srProtocol = params.srProtocol ? params.srProtocol : "";
   var srIsMain = params.srIsMain ? params.srIsMain : "";
-
+  console
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
           p.*
@@ -54,9 +52,10 @@ const etList = async (conn: any, params: any) => {
         break;
     }
   }
-
+  
   // search date
   if (srBeginDate) {
+    console.log("srBeginDate", srBeginDate);
     vParams.push(srBeginDate);
     vQuery = vQuery + ` AND p.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
@@ -67,11 +66,12 @@ const etList = async (conn: any, params: any) => {
       ` AND p.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
-  // paging
-  vParams.push(pageBegin, pageRow);
-  vQuery = vQuery + ` LIMIT ?, ? `;
   vQuery = vQuery + ` ORDER BY p.pool_id DESC `;
 
+  // paging
+  vParams.push(pageBegin, pageRow);
+  vQuery = vQuery + ` LIMIT ?, ? `;  
+  
   return await conn.query(vQuery, vParams);
 };
 
