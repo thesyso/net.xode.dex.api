@@ -25,7 +25,7 @@ const etList = async (conn: any, params: any) => {
         SELECT SQL_CALC_FOUND_ROWS 
           m.*
         FROM master m
-        WHERE m.master_id IS NOT NULL
+        WHERE 1 = 1
     `;
 
   if (srStatus) {

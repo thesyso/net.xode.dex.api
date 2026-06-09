@@ -30,7 +30,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srMode);
     vQuery = vQuery + ` WHERE t.mode = ?`;
   } else {
-    vQuery = vQuery + ` WHERE t.transaction_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt

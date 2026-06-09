@@ -31,7 +31,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE b.used = ?`;
   } else {
-    vQuery = vQuery + ` WHERE b.board_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt

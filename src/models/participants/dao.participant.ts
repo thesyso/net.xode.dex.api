@@ -25,7 +25,7 @@ const etList = async (conn: any, params: any) => {
         SELECT SQL_CALC_FOUND_ROWS 
           p.*
         FROM participant p
-        WHERE p.participant_id IS NOT NULL
+        WHERE 1 = 1
     `;
 
   if (srUsed) {

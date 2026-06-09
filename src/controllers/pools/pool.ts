@@ -68,11 +68,36 @@ const acSave = async (params: any) => {
       "an unknown error has occurred. If this continues, please contact your administrator.",
   };
 
+  if (
+    !params.market_code ||
+    !params.target_market_code ||
+    !params.protocol ||
+    !params.fee_rate
+  ) {
+    result = {
+      success: false,
+      message:
+        "Market code, target market code, protocol, and fee rate are required.",
+    };
+    return result;
+  }
+
   const conn = await getPools();
 
   try {
+    // 마켓코드와 교환코드와 동일한 수수료
+    const reExistRes = await daoPool.etIsExist(conn, params);
+    if (reExistRes && reExistRes.length > 0) {
+      result = {
+        success: false,
+        message:
+          "A pool with the same market code, target market code, protocol, and fee rate already exists.",
+      };
+      return result;
+    }
+
     const reRes = await daoPool.etSave(conn, params);
-    if(!reRes || reRes.affectedRows === 0) {
+    if (!reRes || reRes.affectedRows === 0) {
       result = {
         success: false,
         message: "Failed to save the pool record. Please try again.",
@@ -106,7 +131,7 @@ const acChange = async (params: any) => {
 
   try {
     const reRes = await daoPool.etChange(conn, params);
-    if(!reRes || reRes.affectedRows === 0) {
+    if (!reRes || reRes.affectedRows === 0) {
       result = {
         success: false,
         message: "Failed to change the pool record. Please try again.",
@@ -181,7 +206,7 @@ const acRemove = async (id: number) => {
 
   try {
     const reRes = await daoPool.etRemove(conn, id);
-    if(!reRes || reRes.affectedRows === 0) {
+    if (!reRes || reRes.affectedRows === 0) {
       result = {
         success: false,
         message: "Failed to remove the pool record. Please try again.",

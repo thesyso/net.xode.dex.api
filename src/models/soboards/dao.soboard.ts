@@ -29,7 +29,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srStatus);
     vQuery = vQuery + ` WHERE sb.status = ?`;
   } else {
-    vQuery = vQuery + ` WHERE sb.soboard_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   if (cago) {

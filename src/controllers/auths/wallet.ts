@@ -1,34 +1,19 @@
-import { getAddress, isAddress } from "ethers";
-import { decodeAddress } from "@polkadot/util-crypto";
 
 import getPools from "../../libs/db.ins.js";
 import { redisService } from "../../libs/redis.ins.js";
 import { IResult } from "../../libs/interface/result.interface.js";
 import { moMessage } from "../../libs/modules/message.js";
 import { Wallet } from "../../libs/modules/utils.validate.js";
-import { verifyWalletSignature } from "../../libs/modules/utils.verifier.js";
 import { randomCryptoString } from "../../libs/modules/common.random.js";
-import {
-  csDeCryptoAES256,
-  csEnCryptoAES256,
-} from "../../libs/modules/common.crypto.js";
-import {
-  refresh,
-  refreshVerifyWallet,
-  signWallet,
-} from "../../libs/modules/auth.token.js";
+import { csDeCryptoAES256, csEnCryptoAES256 } from "../../libs/modules/common.crypto.js";
+import { signWallet, verifyWallet } from "../../libs/modules/auth.token.js";
 
 import daoWallet from "../../models/wallets/dao.wallet.js";
 import daoUserWallet from "../../models/users/dao.user.wallet.js";
 import { IUserWallet, IUser } from "../../models/users/dto.user.js";
-import {
-  IWallet,
-  IWalletTransaction,
-} from "../../models/wallets/dto.wallet.js";
-import {
-  IWalletSignPayLoad,
-  EnumWalletChain,
-} from "../../libs/interface/wallet.interface.js";
+import { IWallet, IWalletTransaction } from "../../models/wallets/dto.wallet.js";
+import { EnumWalletChain } from "../../libs/interface/wallet.interface.js";
+import { IWalletSignPayLoad } from "../../libs/interface/auth.interface.js";
 
 // PROCESS: 지갑 챌린지 생성, 검증, 등록, 토큰 발급
 // 준비검토
@@ -221,7 +206,7 @@ export const acRefresh = async (params: any) => {
     };
   }
 
-  const resVerify = await refreshVerifyWallet(params.refreshToken);
+  const resVerify = await verifyWallet(params.refreshToken, "refresh");
 
   if (!resVerify.ok) {
     return {

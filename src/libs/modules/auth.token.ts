@@ -4,131 +4,177 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { IResult, IResultRefresh } from "../interface/result.interface";
 
 import { redisService } from "../redis.ins";
-import { IWalletSignPayLoad, EnumWalletChain, IResVerifyWallet } from "../interface/wallet.interface";
-import wallet from "../../controllers/wallets/wallet";
-import e from "express";
+import { EnumWalletChain } from "../interface/wallet.interface";
+import { ISignPayLoad, IResVerify, IAuth, IWalletSignPayLoad, IResVerifyWallet } from "../interface/auth.interface";
+import { connect } from "node:http2";
+import { decode } from "node:punycode";
 
+// secret key는 환경변수에서 가져오거나 기본값으로 설정
 const secretAccessKey = process.env.JWT_SECRET_KEY || "6BEDlGinwwJZKOpDtxH4yz0Pk6foUyHa";
 const secretRefreshKey = process.env.JWT_REFRESH_SECRET_KEY || "lh1x0rg3BtCK9GVvr9tvqt4elZtB6lsT";
 
+// token 유효기간 설정 (초 단위)
 const accessLimit = process.env.JWT_ACCESS_LIMIT || "3600";
-const accessAgentLimit = process.env.JWT_ACCESS_AGENT_LIMIT || "3600";
-
 const refreshLimit = process.env.JWT_REFRESH_LIMIT || "86400";
+
+const accessAgentLimit = process.env.JWT_ACCESS_AGENT_LIMIT || "3600";
 const refreshAgentLimit = process.env.JWT_REFRESH_AGENT_LIMIT || "86400";
 
+// wallet 관련 정보
 const secretWalletKey = process.env.JWT_WALLET_SECRET || "EqM5sKdkLiwx2xkRoAq8lhrELHbmOR2zEXBOBGLycCI=";
 const refreshWalletKey = process.env.JWT_WALLET_REFRESH || "/3PorrEAPM8OACdlBoUgr3EBcWAFyZUSk7xWXDFGCks=";
+
 const walletAccessLimit = process.env.JWT_WALLET_EXPIRES_IN || "3600";
 const walletRefreshLimit = process.env.JWT_WALLET_REFRESH_EXPIRES_IN || "86400";
 
-
-export const sign = (user: any) => {
+/**
+ * user, admin token 발급 및 검증
+ * @param payLoad 
+ * @returns 
+ */
+export const sign = (payLoad: ISignPayLoad) => {
   // access token 발급
-  const payLoad = {
-    // access token에 들어갈 payLoad
-    uid: user.uid,
-    id: user.id,
-    role: user.role,
-    name: user.name,
-    nname: user.nname,
-    phone: user.phone,
-  };
-
-  return jwt.sign(payLoad, secretAccessKey, {
-    // secret으로 sign하여 발급하고 return
-    algorithm: "HS256", // 암호화 알고리즘
-    expiresIn: parseInt(accessLimit), //'1h' or 60 * 60, 	  // 유효기간
-  });
-};
-
-export const signsys = (user: any) => {
-  // access token 발급
-  const payLoad = {
-    // access token에 들어갈 payLoad
-    uid: user.uid,
-    id: user.id,
-    role: user.role,
-    name: user.name,
-    nname: user.nname,
-    phone: user.phone,
-  };
-
-  return jwt.sign(payLoad, secretAccessKey, {
-    // secret으로 sign하여 발급하고 return
-    algorithm: "HS256", // 암호화 알고리즘
-    expiresIn: parseInt(accessAgentLimit), //'1h' or 60 * 60, 	  // 유효기간
-  });
-};
-
-export const verify = (accessToken: string) => {
-  // access token 검증
-  let decoded: any;
   try {
-    decoded = jwt.verify(accessToken, secretAccessKey);
+    const accessToken = jwt.sign(payLoad, secretAccessKey, {
+      // secret으로 sign하여 발급하고 return
+      algorithm: "HS256", // 암호화 알고리즘
+      expiresIn: parseInt(accessLimit), //'1h' or 60 * 60, 	  // 유효기간
+    });
+
+    const refreshToken = jwt.sign(payLoad, secretRefreshKey, {
+      // secret으로 sign하여 발급하고 return
+      algorithm: "HS256", // 암호화 알고리즘
+      expiresIn: parseInt(refreshLimit), //'1h' or 60 * 60, 	  // 유효기간
+    });
+
     return {
       ok: true,
-      uid: decoded.uid,
-      id: decoded.id,
-      role: decoded.role,
-      name: decoded.name,
-      nname: decoded.nname,
-      phone: decoded.phone,
+      accessToken,
+      refreshToken
     };
-  } catch (err: any) {
+  } catch(err: any) {
     return {
       ok: false,
       message: err.message,
+      accessToken: null,
+      refreshToken: null
     };
   }
 };
 
-export const refresh = (uid: number) => {
-  // refresh token 발급
-  const payLoad = {
-    uid: uid,
-  };
-
-  return jwt.sign(payLoad, secretRefreshKey, {
-    // refresh token은 payLoad 없이 발급
-    algorithm: "HS256",
-    expiresIn: parseInt(refreshLimit),
-  });
-};
-
-export const refreshsys = (uid: number) => {
-  // refresh token 발급
-  const payLoad = {
-    uid: uid,
-  };
-
-  return jwt.sign(payLoad, secretRefreshKey, {
-    // refresh token은 payLoad 없이 발급
-    algorithm: "HS256",
-    expiresIn: parseInt(refreshAgentLimit),
-  });
-};
-
-export const refreshVerify = (refreshToken: string) => {
-  // refresh token 검증
+export const verify = (secureToken: string, mode: "access" | "refresh" = "access") => {
+  // access token 검증
   let decoded: any;
-  const result: IResultRefresh = {
+  let resVeify: IResVerify = {
     ok: false,
-    message:
-      "an unknown error has occurred. If this continues, please contact your administrator.",
-    uid: 0,
-  };
+    message: "Invalid token.",
+    uid: "",
+    id: "",
+    role: "",
+    deviceId: "",
+    deviceIp: "",
+    connected_ip: "",
+    connected_at: new Date(0),
+    mode: mode
+  }
 
   try {
-    decoded = jwt.verify(refreshToken, secretRefreshKey);
-    result.ok = true;
-    result.uid = decoded.uid;
-    result.message = "Refresh token is valid.";
+    if(mode === "access"){
+      decoded = jwt.verify(secureToken, secretAccessKey);
+    } else {
+      decoded = jwt.verify(secureToken, secretRefreshKey);
+    }
+
+    resVeify.ok = true;
+    resVeify.message = "Token is valid.";
+    resVeify.uid = decoded.uid;
+    resVeify.id = decoded.id;
+    resVeify.role = decoded.role;
+    resVeify.deviceId = decoded.deviceId;
+    resVeify.deviceIp = decoded.deviceIp;
+    resVeify.connected_ip = decoded.connected_ip;
+    resVeify.connected_at = decoded.connected_at;
+    
   } catch (err: any) {
-    result.ok = false;
-    result.message = err.message;
+    resVeify.ok = false;
+    resVeify.message = err.message;
   }
-  return result;
+
+  return resVeify;
+};
+
+/**
+ * system token 발급 및 검증
+ * @param payLoad 
+ * @returns 
+ */
+export const signAgent = (payLoad: ISignPayLoad) => {
+  try {
+    const accessToken = jwt.sign(payLoad, secretAccessKey, {
+      // secret으로 sign하여 발급하고 return
+      algorithm: "HS256", // 암호화 알고리즘
+      expiresIn: parseInt(accessAgentLimit), //'1h' or 60 * 60, 	  // 유효기간
+    });
+
+    const refreshToken = jwt.sign(payLoad, secretRefreshKey, {
+      // secret으로 sign하여 발급하고 return
+      algorithm: "HS256", // 암호화 알고리즘
+      expiresIn: parseInt(refreshAgentLimit), //'1h' or 60 * 60, 	  // 유효기간
+    });
+
+    return {
+      ok: true,
+      accessToken,
+      refreshToken
+    };
+  } catch(err: any) {
+    return {
+      ok: false,
+      message: err.message,
+      accessToken: null,
+      refreshToken: null
+    };
+  }
+};
+export const verifyAgent = (secureToken: string, mode: "access" | "refresh" = "access") => {
+  // access token 검증
+  let decoded: any;
+  let resVeify: IResVerify = {
+    ok: false,
+    message: "Invalid token.",
+    uid: "",
+    id: "",
+    role: "",
+    deviceId: "",
+    deviceIp: "",
+    connected_ip: "",
+    connected_at: new Date(0),
+    mode: mode
+  }
+
+  try {
+    if(mode === "access"){
+      decoded = jwt.verify(secureToken, secretAccessKey);
+    } else {
+      decoded = jwt.verify(secureToken, secretRefreshKey);
+    }
+
+    resVeify.ok = true;
+    resVeify.message = "Token is valid.";
+    resVeify.uid = decoded.uid;
+    resVeify.id = decoded.id;
+    resVeify.role = decoded.role;
+    resVeify.deviceId = decoded.deviceId;
+    resVeify.deviceIp = decoded.deviceIp;
+    resVeify.connected_ip = decoded.connected_ip;
+    resVeify.connected_at = decoded.connected_at;
+    
+  } catch (err: any) {
+    resVeify.ok = false;
+    resVeify.message = err.message;
+  }
+
+  return resVeify;
 };
 
 
@@ -181,7 +227,7 @@ export const signWallet = async (payLoad: IWalletSignPayLoad) => {
   }
 }
 
-export const verifyWallet = (accessToken: string) => {
+export const verifyWallet = (secureToken: string, mode: "access" | "refresh" = "access") => {
   let decoded: any;
   let resVerify: IResVerifyWallet = {
     ok: false,
@@ -195,11 +241,15 @@ export const verifyWallet = (accessToken: string) => {
     signature: "",
     walletName: "",
     provider: "",
-    mode: "access"
+    mode: mode
   };
   
   try {
-    decoded = jwt.verify(accessToken, secretWalletKey);
+    if(mode === "access"){
+      decoded = jwt.verify(secureToken, secretWalletKey);
+    } else {
+      decoded = jwt.verify(secureToken, refreshWalletKey);
+    }
     resVerify.ok = true;
     resVerify.message = "Wallet token is valid.";
     resVerify.walletId = decoded.walletId;
@@ -235,13 +285,6 @@ export const refreshVerifyWallet = (refreshToken: string) => {
     mode: "refresh"
   };
 
-  const result: IResultRefresh = {
-    ok: false,
-    message:
-      "an unknown error has occurred. If this continues, please contact your administrator.",
-    uid: 0,
-  };
-
   try {
     decoded = jwt.verify(refreshToken, refreshWalletKey);
     resVerify = {
@@ -255,7 +298,8 @@ export const refreshVerifyWallet = (refreshToken: string) => {
       chain: decoded.chain?.toLowerCase() || EnumWalletChain.ETHEREUM,
       provider: decoded.provider,
       walletName: decoded.walletName,
-      signature: decoded.signature
+      signature: decoded.signature,
+      mode: "refresh"
     };
   } catch (err: any) {
     resVerify.ok = false;
@@ -264,13 +308,3 @@ export const refreshVerifyWallet = (refreshToken: string) => {
   return resVerify;
 };
 
-export default {
-  sign,
-  signsys,
-  signWallet,
-  verify,
-  verifyWallet,
-  refresh,
-  refreshsys,
-  refreshVerify,
-};

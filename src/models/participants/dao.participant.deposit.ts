@@ -33,7 +33,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE pd.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE pd.participant_deposit_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   if (srStatus) {

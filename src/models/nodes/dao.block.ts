@@ -46,7 +46,7 @@ const etList = async (db: Db, params: any) => {
   const rows = await db
     .collection(coName)
     .find(filter)
-    .sort({ blockNumber: 1 }) // ORDER BY ASC
+    .sort({ blockNumber: -1 }) // ORDER BY blockNumber DESC
     .skip(pageBegin) // LIMIT offset
     .limit(pageRow) // LIMIT count
     .toArray();

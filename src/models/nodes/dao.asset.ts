@@ -2,10 +2,17 @@ import { Db, ObjectId } from "mongodb";
 import { IDXAssets } from "./dto.node";
 
 const coName = "assets";
+
+const parsePositiveInt = (value: unknown, fallback: number) => {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
 // 목록 조회
 const etList = async (db: Db, params: any) => {
-  const pageRow = params.pageRow ? parseInt(params.pageRow) : 10;
-  const pageBegin = params.page ? (parseInt(params.page) - 1) * pageRow : 0;
+  const pageRow = parsePositiveInt(params.pageRow, 10);
+  const page = parsePositiveInt(params.page, 1);
+  const pageBegin = (page - 1) * pageRow;
 
   // 1. Filter(Where 조건) 생성
   let filter: any = {};
@@ -21,7 +28,7 @@ const etList = async (db: Db, params: any) => {
   if (params.sr != 0 && params.srTxt?.length > 0) {
     const regex = new RegExp(params.srTxt, "i"); // case-insensitive LIKE %txt%
     if (params.sr == 1) filter.assetNode = regex;
-    else if (params.sr == 2) filter.assetNode = regex;
+    else if (params.sr == 2) filter.name = regex;
   }
 
   // 날짜 검색
@@ -29,7 +36,7 @@ const etList = async (db: Db, params: any) => {
   const srEndDate = new Date(params.srEndDate);
 
   if (!isNaN(srBeginDate.getTime()) || !isNaN(srEndDate.getTime())) {
-    filter.created_at = {};
+    filter.updatedAt = {};
     if (!isNaN(srBeginDate.getTime())) {
       filter.updatedAt.$gte = srBeginDate;
     }
@@ -40,7 +47,7 @@ const etList = async (db: Db, params: any) => {
       filter.updatedAt.$lt = nextDay;
     }
   }
-  console.log("Generated MongoDB filter:", filter);
+
   const count = await db.collection(coName).countDocuments(filter);
 
   // 2. Query 실행

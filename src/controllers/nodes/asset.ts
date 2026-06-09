@@ -5,6 +5,8 @@ import { moMessage } from "../../libs/modules/message.js";
 import daoAsset from "../../models/nodes/dao.asset.js";
 
 const acList = async (params: any) => {
+  // console.log("assetController.acList called with params:", params);
+  
   let result: IResult = {
     success: false,
     message: "an unknown error has occurred. If this continues, please contact your administrator."

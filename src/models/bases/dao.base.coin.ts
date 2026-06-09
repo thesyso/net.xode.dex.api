@@ -28,7 +28,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE b.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE b.coin_code IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt

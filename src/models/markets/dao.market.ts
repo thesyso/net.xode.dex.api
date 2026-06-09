@@ -31,7 +31,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE m.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE m.market_code IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt

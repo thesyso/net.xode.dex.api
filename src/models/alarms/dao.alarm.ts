@@ -21,14 +21,14 @@ const etList = async (conn: any, params: any) => {
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
           a.*
-        FROM asset a
+        FROM alarm a
     `;
 
   if (srUsed) {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE a.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE a.asset_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt
@@ -36,15 +36,11 @@ const etList = async (conn: any, params: any) => {
     switch (true) {
       case sr == 1:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND a.asset_id LIKE ?`;
+        vQuery = vQuery + ` AND a.alarm_id LIKE ?`;
         break;
       case sr == 2:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND a.asset_name LIKE ?`;
-        break;
-      case sr == 3:
-        vParams.push(srTxt);
-        vQuery = vQuery + ` AND a.asset_symbol LIKE ?`;
+        vQuery = vQuery + ` AND a.contents LIKE ?`;
         break;
     }
   }
@@ -61,7 +57,7 @@ const etList = async (conn: any, params: any) => {
       ` AND a.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
-  vQuery = vQuery + ` ORDER BY a.asset_id, a.asset_node DESC `;
+  vQuery = vQuery + ` ORDER BY a.alarm_id DESC `;
 
   // paging
   vParams.push(pageBegin, pageRow);
@@ -70,16 +66,16 @@ const etList = async (conn: any, params: any) => {
   return await conn.query(vQuery, vParams);
 };
 // 상세조회
-const etDetail = async (conn: any, asset_id: string, asset_node: string) => {
+const etDetail = async (conn: any, alarm_id: number) => {
   var vParams = new Array();
 
   var vQuery = `
         SELECT 
           a.*
-        FROM asset a
-        WHERE a.asset_id = ? and a.asset_node = ?
+        FROM alarm a
+        WHERE a.alarm_id = ?
     `;
-  vParams.push(asset_id, asset_node);
+  vParams.push(alarm_id);
 
   // console.log("daoBaseExchange etDetail vQuery", vQuery, vParams);
   return await conn.query(vQuery, vParams);
@@ -89,17 +85,17 @@ const etSave = async (conn: any, params: any) => {
   var vParams = new Array();
 
   var vQuery = `
-        INSERT INTO asset (
-          asset_id,
-          asset_node,
-          asset_name,
-          asset_symbol,
-          asset_status,
-          asset_decimal,
-          is_use
-        ) VALUES (?, ?, ?, ?, ?, ?, 1)
+        INSERT INTO alarm (
+          status,
+          contents,
+          is_notice,
+          is_use,
+          sended_at,
+          created_at,
+          updated_at
+        ) VALUES (1, ?, ?, 1, ?, NOW(), NOW())
     `;
-  vParams.push(params.asset_id, params.asset_node, params.asset_name, params.asset_symbol, params.asset_status, params.asset_decimal);
+  vParams.push(params.status, params.contents, params.isNotice, params.sended_at); 
   return await conn.query(vQuery, vParams);
 };
 // 수정
@@ -107,19 +103,12 @@ const etChange = async (conn: any, params: any) => {
   var vParams = new Array();
 
   var vQuery = `
-        UPDATE asset SET
-          asset_name = ?,
-          asset_symbol = ?,
-          asset_decimal = ?
-        WHERE asset_id = ? AND asset_node = ?
+        UPDATE alarm SET
+          contents = ?,
+          updated_at = NOW()
+        WHERE alarm_id = ?
     `;
-  vParams.push(
-    params.asset_name,
-    params.asset_symbol,
-    params.asset_decimal,
-    params.asset_id,
-    params.asset_node
-  );  
+  vParams.push(params.contents, params.alarm_id);  
 
   return await conn.query(vQuery, vParams);
 };
@@ -128,23 +117,25 @@ const etPatchStatus = async (conn: any, params: any) => {
   var vParams = new Array();
 
   var vQuery = `
-        UPDATE asset SET
-        asset_status = ?
-        WHERE asset_id = ? AND asset_node = ?
+        UPDATE alarm SET
+        alarm_status = ?,
+        sended_at = CASE WHEN ? = 2 THEN NOW() ELSE sended_at END,
+        updated_at = NOW()
+        WHERE alarm_id = ?
         `;
 
-  vParams.push(params.asset_status, params.asset_id, params.asset_node);
+  vParams.push(params.alarm_status, params.alarm_status, params.alarm_id);
 
   return await conn.query(vQuery, vParams);
 };
 // delete
-const etRemove = async (conn: any, asset_id: string, asset_node: string) => {
+const etRemove = async (conn: any, alarm_id: number) => {
   var vParams = new Array();
 
-  vParams.push(asset_id, asset_node);
+  vParams.push(alarm_id);
   var vQuery = `
-        UPDATE asset SET is_use = CASE WHEN is_use = 1 THEN 0 ELSE 1 END
-        WHERE asset_id = ? and asset_node = ?
+        UPDATE alarm SET is_use = CASE WHEN is_use = 1 THEN 0 ELSE 1 END
+        WHERE alarm_id = ?
   `;
    return await conn.query(vQuery, vParams);
 }
@@ -155,5 +146,6 @@ export default {
   etDetail,
   etSave,
   etChange,
+  etPatchStatus,
   etRemove,
 };

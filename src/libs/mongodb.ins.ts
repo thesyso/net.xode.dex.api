@@ -56,7 +56,12 @@ export async function getPools(): Promise<Db> {
         // MongoDB는 정확히 active/idle을 속성으로 노출하지 않으므로 상태 메시지로 대체
         moMessage(
             `mongodb connection`,
-            `status >> connected to ${nameDB} at ${uri}`,
+            `status >> connected to ${nameDB}`,
+            'info'
+        );
+        moMessage(
+            `mongodb connection`,
+            `uri: ${uri}`,
             'info'
         );
     }

@@ -28,7 +28,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE bl.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE bl.language_code IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt

@@ -28,7 +28,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE a.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE a.asset_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt
@@ -77,7 +77,7 @@ const etDetail = async (conn: any, asset_id: string, asset_node: string) => {
         SELECT 
           a.*
         FROM asset a
-        WHERE a.asset_id = ? and a.asset_node = ?
+        WHERE a.asset_id = ? AND a.asset_node = ?
     `;
   vParams.push(asset_id, asset_node);
 
@@ -144,7 +144,7 @@ const etRemove = async (conn: any, asset_id: string, asset_node: string) => {
   vParams.push(asset_id, asset_node);
   var vQuery = `
         UPDATE asset SET is_use = CASE WHEN is_use = 1 THEN 0 ELSE 1 END
-        WHERE asset_id = ? and asset_node = ?
+        WHERE asset_id = ? AND asset_node = ?
   `;
    return await conn.query(vQuery, vParams);
 }
@@ -155,5 +155,6 @@ export default {
   etDetail,
   etSave,
   etChange,
+  etPatchStatus,
   etRemove,
 };

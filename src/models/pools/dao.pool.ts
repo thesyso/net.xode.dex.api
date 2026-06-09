@@ -31,7 +31,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE p.used = ?`;
   } else {
-    vQuery = vQuery + ` WHERE p.pool_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   if (srProtocol) {
@@ -87,12 +87,12 @@ const etDetail = async (conn: any, id: number) => {
   return await conn.query(vQuery, vParams);
 };
 
-const etIsExist = async (conn: any, market_code: string, protocol: string) => {
-  var vParams = [market_code, protocol];
+const etIsExist = async (conn: any, params: any) => {
+  var vParams = [params.market_code, params.target_market_code, params.protocol, params.fee_rate];
   var vQuery = `
       SELECT p.pool_id  
       FROM pool p
-      WHERE p.market_code = ? AND p.protocol = ?
+      WHERE p.market_code = ? AND p.target_market_code = ? AND p.protocol = ? AND p.fee_rate = ?
     `;
 
   return await conn.query(vQuery, vParams);

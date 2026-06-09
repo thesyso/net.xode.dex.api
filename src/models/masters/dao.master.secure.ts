@@ -30,7 +30,7 @@ const etList = async (conn: any, params: any) => {
       vParams.push(srUsed);
       vQuery = vQuery + ` WHERE ms.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE ms.secure_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt
@@ -100,7 +100,7 @@ const etListEx = async (conn: any, params: any) => {
       vParams.push(srUsed);
       vQuery = vQuery + ` WHERE ms.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE ms.secure_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   if(srEmailID){

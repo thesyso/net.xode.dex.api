@@ -31,7 +31,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srStatus);
     vQuery = vQuery + ` WHERE uw.status = ?`;
   } else {
-    vQuery = vQuery + ` WHERE uw.user_wallet_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt
@@ -100,7 +100,7 @@ const etListInWallet = async (conn: any, params: any) => {
     vParams.push(srStatus);
     vQuery = vQuery + ` WHERE uw.status = ?`;
   } else {
-    vQuery = vQuery + ` WHERE uw.user_wallet_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   // where : sr srtxt

@@ -21,7 +21,7 @@ const etList = async (conn: any, params: any) => {
     SELECT SQL_CALC_FOUND_ROWS 
       mc.*
     FROM master_connect mc
-    WHERE mc.connect_id IS NOT NULL
+    WHERE 1 = 1
   `;
 
   if(srMasterId){
@@ -91,7 +91,7 @@ const etListEx = async (conn: any, params: any) => {
       m.location
     FROM master_connect mc
     LEFT OUTER JOIN master m ON mc.master_id = m.master_id
-    WHERE mc.connect_id IS NOT NULL
+    WHERE mc.connect_id 1 = 1
   `;
 
   if(srEmailId){
@@ -155,7 +155,7 @@ const etSave = async (conn: any, params: any) => {
     INSERT INTO master_connect (
       memo,
       connected_ip,
-      connected_at,
+      expired_at,
       master_id
     ) VALUES (?, ?, NOW(), ?)
   `;

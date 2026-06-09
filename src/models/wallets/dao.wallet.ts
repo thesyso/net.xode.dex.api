@@ -31,7 +31,7 @@ const etList = async (conn: any, params: any) => {
     vParams.push(srUsed);
     vQuery = vQuery + ` WHERE w.is_use = ?`;
   } else {
-    vQuery = vQuery + ` WHERE w.wallet_id IS NOT NULL`;
+    vQuery = vQuery + ` WHERE 1 = 1`;
   }
 
   if (srWalletClass) {

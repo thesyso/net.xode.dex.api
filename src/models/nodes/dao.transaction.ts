@@ -59,7 +59,7 @@ const etList = async (db: Db, params: any) => {
 
   // FOUND_ROWS() 대응을 위해 전체 개수도 함께 반환하는 것이 효율적입니다.
   const count = await db.collection(coName).countDocuments(filter);
-
+  console.log("etList filter:", filter, "rows length:", rows.length, "total count:", count);
   return { rows, count };
 };
 

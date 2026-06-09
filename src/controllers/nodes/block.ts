@@ -23,7 +23,7 @@ const acList = async (params: any) => {
   } catch (error: any) {
     moMessage(`blockController.acList`, error?.message || error, "error");
     result.message = error?.message || "Failed to connect to MongoDB.";
-  }
+  } 
   return result;
 };
 

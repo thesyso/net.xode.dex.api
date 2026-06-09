@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
     srBeginDate: req.query?.srBeginDate ? req.query.srBeginDate.toString() : "",
     srEndDate: req.query?.srEndDate ? req.query.srEndDate.toString() : "",
   };
-  
+
   const { success, data, message } = await transactionController.acList(sParams);
   res.status(200).json({ success, data, message });
 });

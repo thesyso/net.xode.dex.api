@@ -51,6 +51,18 @@ router.post("/login", async (req, res) => {
 router.post("/register", async (req, res) => {
   const connect_ip = req.ip || req.headers['x-forwarded-for'] || "";
 
+  // 가입시 이메일 아이디 기준으로 @앞 부분을 네임 및 닉네임으로 우선 설정
+  // 필리핀 기준으로 가입을 설정함.
+  // 위치 정보는 헤드 값에서 받아 올것
+  // 언어는 영어로
+  // params.password = resPassword.errCode === 0 ? resPassword.cryptoCode : "";
+  // params.salt = salt;
+  // params.mastername = "";
+  // params.nickname = "";
+  // params.nation_no = "63"
+  // params.nation = "ph"
+  // params.language = "us";
+
   const sParams = {
     status : 0,       // 0 : 가입 , 1 : 일반 , 7 : 정지, 9 : 탈퇴
     authority : 0,    // 0 : 권한없음, 1 : 일반, 5 : 매니저, 7 : 운영자, 9 : 시스템

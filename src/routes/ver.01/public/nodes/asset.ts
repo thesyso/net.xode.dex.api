@@ -1,6 +1,7 @@
 import express from 'express';
 
 import  assetController from "../../../../controllers/nodes/asset.js";
+import { IResult } from '../../../../libs/interface/result.interface.js';
 
 const router = express.Router();
 
@@ -16,8 +17,8 @@ router.get('/', async (req, res) => {
     srEndDate: req.query?.srEndDate ? req.query.srEndDate.toString() : "",
   };
   
-  const { success, data, message } = await assetController.acList(sParams);
-  res.status(200).json({ success, data, message });
+  const result:IResult = await assetController.acList(sParams);
+  res.status(200).json(result);
 });
 
 router.delete('/:id', async (req, res) => {

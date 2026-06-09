@@ -1,5 +1,6 @@
 import express from 'express';
 import nodesRouter from "./nodes/index.js";
+import assetsRouter from "./assets/index.js";
 
 const router = express.Router();
 
@@ -10,5 +11,6 @@ router.get('/', (req, res) => {
   });
 });
 
+router.use('/assets', assetsRouter);
 router.use('/nodes', nodesRouter);
 export default router;

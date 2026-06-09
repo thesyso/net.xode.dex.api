@@ -11,10 +11,11 @@ import { randomString } from "../../libs/modules/common.random.js"
 //
 import daoMaster from "../../models/masters/dao.master.js";
 
-import { sign, verify, refresh, refreshVerify, } from "../../libs/modules/auth.token.js";
+import { sign, verify } from "../../libs/modules/auth.token.js";
 
 import { csEnCryptSHA512 } from "../../libs/modules/common.crypto.js";
 import { IsStatus } from "../../libs/modules/auth.status.js";
+import { IResVerify, ISignPayLoad } from '../../libs/interface/auth.interface.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || 3600; // 1h
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || 604800; // 7d
@@ -96,9 +97,9 @@ const acLogin = async (params: any) => {
       return result;
     }
 
-    const user = rows[0];
-    const userSalt = user.salt;
-    const statusResult = IsStatus(user.status);
+    const master = rows[0];
+    const userSalt = master.salt;
+    const statusResult = IsStatus(master.status);
 
     if (!statusResult.success) {
       result = statusResult;
@@ -106,7 +107,7 @@ const acLogin = async (params: any) => {
     }
 
     // 입력된 비밀번호를 해시하여 데이터베이스에 저장된 해시와 비교
-    const userPasswordHash = user.password;
+    const userPasswordHash = master.password;
     const inputPasswordHash = csEnCryptSHA512(params.password, userSalt);
 
     if (inputPasswordHash !== userPasswordHash) {
@@ -118,32 +119,38 @@ const acLogin = async (params: any) => {
     }
 
     // 로그인 성공 create token
-    const payLoad = {
-      uid: user.user_id,
-      id: user.email_id,
-      name: user.name,
-      role: user.authority,
-      nname: user.nickname,
-      connected_at: new Date().toISOString(),
-      connected_ip: params.ip || "",
+    const payLoad : ISignPayLoad = {
+      uid: master.master_id,
+      id: master.emailid,
+      role: master.authority,
+      deviceId: params.deviceId || "",
+      deviceIp: params.deviceIp || "",
+      connected_ip: params.connected_ip || "",
+      connected_at: new Date()
     };
 
-    const accessToken = sign(payLoad);
-    const refreshToken = refresh(payLoad.uid);
+    const resPayLoad = sign(payLoad);
+    if(!resPayLoad.ok) {
+      result = {
+        success: false,
+        message: resPayLoad.message,
+      };
+      return result;
+    }
 
     result = {
       success: true,
       message: "Login successful.",
       data: {
-        accessToken: accessToken,
-        refreshToken: refreshToken,
+        accessToken: resPayLoad.accessToken,
+        refreshToken: resPayLoad.refreshToken,
       },
     };
 
     // 로그인 성공 시, Redis에 세션 정보 저장 (예: user_id와 로그인 시간)
     const redis_00 = await redisService.getClient(0);
     await redis_00.set(
-      `session:${user.user_id}`, 
+      `auth:master:${master.master_id}`, 
       JSON.stringify(result.data),
       { EX: Number(JWT_EXPIRES_IN)}
     ); // 세션 유효기간 24시간  
@@ -160,7 +167,7 @@ const acLogin = async (params: any) => {
   return result;
 };
 
-const acLogout = async (userId: number) => {
+const acLogout = async (masterId: number) => {
   let result: IResult = {
     success: false,
     message:
@@ -174,7 +181,7 @@ const acLogout = async (userId: number) => {
 
     // Redis에서 세션 정보 삭제
     const redis_00 = await redisService.getClient(0);
-    await redis_00.del(`session:${userId}`);
+    await redis_00.del(`auth:master:${masterId}`);
     result = {
       success: true,
       message: "Logout successful.",
@@ -212,22 +219,22 @@ const acRefresh = async (params: any) => {
 
   try {
     conn = await getPools();
-    const reRes : IResultRefresh = refreshVerify(reToken);
+    const resVerify : IResVerify = verify(reToken, "refresh");
 
-    if (!reRes.ok) {
+    if (!resVerify.ok) {
       result = {
         success: false,
-        message: reRes.message,
+        message: resVerify.message,
       };
       return result;
     }
 
-    const userId = reRes.uid;
+    const masterId = resVerify.uid;
 
     // Redis에서 세션 정보 확인
     const redis_00 = await redisService.getClient(0);
-    const sessionData = await redis_00.get(`session:${userId}`);
-    if (!sessionData) {
+    const redisData = await redis_00.get(`auth:master:${masterId}`);
+    if (!redisData) {
       result = {
         success: false,
         message: "Session not found. Please log in again.",
@@ -235,16 +242,19 @@ const acRefresh = async (params: any) => {
       return result;
     }
     
-    const session = JSON.parse(sessionData);
+    const authRedis = JSON.parse(redisData);
     const payLoad = {
-      uid: session.uid,
-      id: session.id,
-      name: session.name,
-      role: session.role,
-      nname: session.nickname,
-      connected_at: session.loginTime,
-      connected_ip: session.ip || "",
+      uid: authRedis.uid,
+      id: authRedis.id,
+      // name: authRedis.name,
+      role: authRedis.role,
+      // nname: authRedis.nickname,
+      connected_at: authRedis.loginTime,
+      connected_ip: authRedis.ip || "",
     };
+
+    // 보안상 이름은 가지고 있지 않음.
+    // 필요시 닉네임, 위치, 언어 등은 회원정보로 전달
 
     const accessToken = sign(payLoad);
     const refreshToken = refresh(payLoad.uid);
@@ -260,7 +270,7 @@ const acRefresh = async (params: any) => {
 
     // 로그인 성공 시, Redis에 세션 정보 저장 (예: user_id와 로그인 시간)
     await redis_00.set(
-      `session:${session.uid}`,
+      `auth:master:${authRedis.uid}`,
       JSON.stringify(result.data),
       { EX: Number(JWT_EXPIRES_IN)}
     ); // 세션 유효기간 24시간  
@@ -287,6 +297,7 @@ const acRegister = async (params: any) => {
       success: false, 
       message: "Email and password are required.",
     };
+
     return result;
   };
 
@@ -308,9 +319,6 @@ const acRegister = async (params: any) => {
     // salt 생성
     const salt = randomString(16);
     const resPassword = csEnCryptSHA512(params.password, salt);
-
-    params.password = resPassword.errCode === 0 ? resPassword.cryptoCode : "";
-    params.salt = salt;
 
     const reRes = await daoMaster.etSave(conn, params);
     result = {
