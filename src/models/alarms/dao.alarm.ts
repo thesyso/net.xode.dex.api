@@ -12,8 +12,8 @@ const etList = async (conn: any, params: any) => {
   var sr = params.sr ? params.sr : 0;
   var srTxt = params.srTxt?.length > 0 ? `%` + params.srTxt + `%` : "";
 
-  var srBeginDate = new Date(!isNaN(params.srBeginDate) ? params.srBeginDate : null);
-  var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
+  var srBeginDate = !isNaN(params.srBeginDate) && params.srBeginDate ? new Date(params.srBeginDate) : null;
+  var srEndDate = !isNaN(params.srEndDate) && params.srEndDate ? new Date(params.srEndDate) : null;
 
   //
   var srUsed = params.srUsed ? params.srUsed : "";
@@ -46,15 +46,13 @@ const etList = async (conn: any, params: any) => {
   }
 
   // search date
-  if (!isNaN(srBeginDate.getTime())) {
+  if (srBeginDate) {
     vParams.push(srBeginDate);
     vQuery = vQuery + ` AND a.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
-  if (!isNaN(srEndDate.getTime())) {
+  if (srEndDate) {
     vParams.push(srEndDate);
-    vQuery =
-      vQuery +
-      ` AND a.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
+    vQuery = vQuery + ` AND a.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
   vQuery = vQuery + ` ORDER BY a.alarm_id DESC `;
@@ -95,7 +93,7 @@ const etSave = async (conn: any, params: any) => {
           updated_at
         ) VALUES (1, ?, ?, 1, ?, NOW(), NOW())
     `;
-  vParams.push(params.status, params.contents, params.isNotice, params.sended_at); 
+  vParams.push(params.contents, params.isNotice, params.sended_at); 
   return await conn.query(vQuery, vParams);
 };
 // 수정

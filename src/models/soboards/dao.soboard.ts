@@ -11,10 +11,8 @@ const etList = async (conn: any, params: any) => {
   var sr = params.sr ? params.sr : 0;
   var srTxt = params.srTxt?.length > 0 ? `%` + params.srTxt + `%` : "";
 
-  var srBeginDate = new Date(
-    !isNaN(params.srBeginDate) ? params.srBeginDate : null,
-  );
-  var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
+  var srBeginDate = !isNaN(params.srBeginDate) && params.srBeginDate ? new Date(params.srBeginDate) : null;
+  var srEndDate = !isNaN(params.srEndDate) && params.srEndDate ? new Date(params.srEndDate) : null;
 
   var cago = params.cago ? params.cago : "";
   var srStatus = params.srStatus ? params.srStatus : "1";
@@ -68,7 +66,7 @@ const etList = async (conn: any, params: any) => {
   }
 
   vQuery = vQuery + ` ORDER BY sb.soboard_id DESC `;
-  
+
   // paging
   vParams.push(pageBegin, pageRow);
   vQuery = vQuery + ` LIMIT ?, ? `;

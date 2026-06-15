@@ -1,11 +1,12 @@
 import express from "express";
 import { IResult } from "../../../../libs/interface/result.interface.js";
-import assetController from "../../../../controllers/assets/asset.js";
+import languageController from "../../../../controllers/bases/language.js";
 
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
+
   let sParams = {
     page: req.query?.page ? parseInt(req.query.page.toString()) : 1,
     pageRow: req.query?.pageRow ? parseInt(req.query.pageRow.toString()) : 10,
@@ -15,19 +16,16 @@ router.get("/", async (req, res) => {
     srEndDate: req.query?.srEndDate ? req.query.srEndDate.toString() : "",
   };
 
-  const result: IResult = await assetController.acList(sParams);
+  const result: IResult = await languageController.acList(sParams);
 
   res.status(200).send(result);
 });
 
-router.get("/:id", async (req, res) => {
-  const asset_id = req.params.id ? req.params.id.toString() : "";
-  const asset_node = req.query?.asset_node ? req.query.asset_node.toString() : "XODE";
-
-  const result: IResult = await assetController.acDetail(asset_id, asset_node);
+router.get("/:code", async (req, res) => {
+  const language_code = req.params.code ? req.params.code.toString() : "";
+  const result: IResult = await languageController.acDetail(language_code);
 
   res.status(200).send(result);
 });
-
 
 export default router;

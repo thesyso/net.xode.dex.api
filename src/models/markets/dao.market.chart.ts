@@ -13,10 +13,8 @@ const etList = async (conn: any, params: any) => {
   var sr = params.sr ? params.sr : 0;
   var srTxt = params.srTxt?.length > 0 ? `%` + params.srTxt + `%` : "";
 
-  var srBeginDate = new Date(
-    !isNaN(params.srBeginDate) ? params.srBeginDate : null,
-  );
-  var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
+  var srBeginDate = !isNaN(params.srBeginDate) && params.srBeginDate ? new Date(params.srBeginDate) : null;
+  var srEndDate = !isNaN(params.srEndDate) && params.srEndDate ? new Date(params.srEndDate) : null;
 
   //
   var srUsed = params.srUsed ? params.srUsed : "";
@@ -44,11 +42,11 @@ const etList = async (conn: any, params: any) => {
   }
 
   // search date
-  if (!isNaN(srBeginDate.getTime())) {
+  if (srBeginDate) {
     vParams.push(srBeginDate);
     vQuery = vQuery + ` AND mc.work_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
-  if (!isNaN(srEndDate.getTime())) {
+  if (srEndDate) {
     vParams.push(srEndDate);
     vQuery = vQuery + ` AND mc.work_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;  
   }

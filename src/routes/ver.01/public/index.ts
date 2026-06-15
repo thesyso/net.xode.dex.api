@@ -1,4 +1,8 @@
 import express from 'express';
+
+import alarmsRouter from './alarms/index.js';
+import basesRouter from './bases/index.js';
+import boardsRouter from './boards/index.js';
 import nodesRouter from "./nodes/index.js";
 import assetsRouter from "./assets/index.js";
 import poolsRouter from "./pools/index.js";
@@ -14,6 +18,9 @@ router.get('/', (req, res) => {
   });
 });
 
+router.use('/alarms', alarmsRouter);
+router.use('/boards', boardsRouter);
+router.use('/bases', basesRouter);
 router.use('/assets', assetsRouter);
 router.use('/nodes', nodesRouter);
 router.use('/pools', poolsRouter);

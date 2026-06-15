@@ -12,13 +12,12 @@ const etList = async (conn: any, params: any) => {
   var sr = params.sr ? params.sr : 0;
   var srTxt = params.srTxt?.length > 0 ? `%` + params.srTxt + `%` : "";
 
-  var srBeginDate = new Date(
-    !isNaN(params.srBeginDate) ? params.srBeginDate : null,
-  );
-  var srEndDate = new Date(!isNaN(params.srEndDate) ? params.srEndDate : null);
+  var srBeginDate = !isNaN(params.srBeginDate) && params.srBeginDate ? new Date(params.srBeginDate) : null;
+  var srEndDate = !isNaN(params.srEndDate) && params.srEndDate ? new Date(params.srEndDate) : null;
 
   //
   var srUsed = params.srUsed ? params.srUsed : "";
+  var srBoardId = params.board_id ? params.board_id : "";
 
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
@@ -40,7 +39,7 @@ const etList = async (conn: any, params: any) => {
         vParams.push(srTxt);
         vQuery = vQuery + ` AND bf.board_id = ?`;
         break;
-      case sr == 2:
+      case sr == 1:
         vParams.push(srTxt);
         vQuery = vQuery + ` AND bf.wallet_id = ?`;
         break;
@@ -48,11 +47,11 @@ const etList = async (conn: any, params: any) => {
   }
 
   // search date
-  if (!isNaN(srBeginDate.getTime())) {
+  if (srBeginDate) {
     vParams.push(srBeginDate);
     vQuery = vQuery + ` AND bf.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
-  if (!isNaN(srEndDate.getTime())) {
+  if (srEndDate) {
     vParams.push(srEndDate);
     vQuery =
       vQuery +

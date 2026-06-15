@@ -47,23 +47,19 @@ const etList = async (conn: any, params: any) => {
     switch (true) {
       case sr == 1:
         vParams.push(srTxt, srTxt);
-        vQuery =
-          vQuery + ` AND (p.market_code LIKE ? OR p.market_target_code LIKE ?)`;
+        vQuery = vQuery + ` AND (p.market_code LIKE ? OR p.market_target_code LIKE ?)`;
         break;
     }
   }
   
   // search date
   if (srBeginDate) {
-    console.log("srBeginDate", srBeginDate);
     vParams.push(srBeginDate);
     vQuery = vQuery + ` AND p.created_at > DATE_FORMAT(?,'%Y-%m-%d')`;
   }
   if (srEndDate) {
     vParams.push(srEndDate);
-    vQuery =
-      vQuery +
-      ` AND p.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
+    vQuery = vQuery + ` AND p.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
   vQuery = vQuery + ` ORDER BY p.pool_id DESC `;

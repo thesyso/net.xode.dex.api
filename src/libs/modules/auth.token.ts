@@ -234,12 +234,12 @@ export const verifyWallet = (secureToken: string, mode: "access" | "refresh" = "
     message: "Invalid token.",
     walletId: 0,
     userWalletId: 0,
+    walletName: "",
     deviceId: "",
     deviceIp: "",
     address: "",
     chain: EnumWalletChain.ETHEREUM,
     signature: "",
-    walletName: "",
     provider: "",
     mode: mode
   };
@@ -254,12 +254,12 @@ export const verifyWallet = (secureToken: string, mode: "access" | "refresh" = "
     resVerify.message = "Wallet token is valid.";
     resVerify.walletId = decoded.walletId;
     resVerify.userWalletId = decoded.userWalletId;
+    resVerify.walletName = decoded.walletName;
     resVerify.deviceId = decoded.deviceId;
     resVerify.deviceIp = decoded.deviceIp;
     resVerify.address = decoded.address || "";
     resVerify.chain = decoded.chain?.toLowerCase() || EnumWalletChain.ETHEREUM;
     resVerify.signature = decoded.signature;
-    resVerify.walletName = decoded.walletName;
     resVerify.provider = decoded.provider;
   } catch (err: any) {
     resVerify.ok = false;
@@ -275,12 +275,12 @@ export const refreshVerifyWallet = (refreshToken: string) => {
     message: "Invalid token.",
     walletId: 0,
     userWalletId: 0,
+    walletName: "",
     deviceId: "",
     deviceIp: "",
     address: "",
     chain: EnumWalletChain.ETHEREUM,
     signature: "",
-    walletName: "",
     provider: "",
     mode: "refresh"
   };
@@ -292,12 +292,12 @@ export const refreshVerifyWallet = (refreshToken: string) => {
       message: "Refresh wallet token is valid.",
       walletId: decoded.walletId,
       userWalletId: decoded.userWalletId,
+      walletName: decoded.walletName,
       deviceId: decoded.deviceId,
       deviceIp: decoded.deviceIp,
       address: decoded.address || "",
       chain: decoded.chain?.toLowerCase() || EnumWalletChain.ETHEREUM,
       provider: decoded.provider,
-      walletName: decoded.walletName,
       signature: decoded.signature,
       mode: "refresh"
     };
