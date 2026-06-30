@@ -83,12 +83,13 @@ const etSave = async (conn: any, params: any) => {
 
   var vQuery = `
         INSERT INTO board_file (
+          board_id,
           file_name,
           origin_name,
           is_use
-        ) VALUES (?, ?, 1)
+        ) VALUES (?, ?, ?, 1)
     `;
-  vParams.push(params.file_name, params.origin_name);
+  vParams.push(params.board_id, params.file_name, params.origin_name);
   return await conn.query(vQuery, vParams);
 };
 

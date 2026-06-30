@@ -1,4 +1,7 @@
 import express from 'express';
+
+import { mwMemberAuthJWT, mwMasterPrivateAuthJWT } from '../../../mwares/mwAuth';
+
 import alarmRouter from './alarms';
 import assetRouter from './assets';
 import boardRouter from './boards';
@@ -17,6 +20,8 @@ import userRouter from './users';
 import walletRouter from './wallets';
 
 const router = express.Router();
+
+router.use(mwMemberAuthJWT, mwMasterPrivateAuthJWT);
 
 router.get('/', (req, res) => {
   res.status(200).json({

@@ -35,7 +35,7 @@ const etList = async (conn: any, params: any) => {
     switch (true) {
       case sr == 1:
         vParams.push(srTxt);
-        vQuery = vQuery + ` AND (bi.file_name LIKE ? OR bi.origin_name LIKE ?)`;
+        vQuery = vQuery + ` AND (bi.image_name LIKE ? OR bi.origin_name LIKE ?)`;
         vParams.push(srTxt);
         break;
     }
@@ -83,12 +83,13 @@ const etSave = async (conn: any, params: any) => {
 
   var vQuery = `
         INSERT INTO board_image (
-          file_name,
+          board_id,
+          image_name,
           origin_name,
           is_use
-        ) VALUES (?, ?, 1)
+        ) VALUES (?, ?, ?, 1)
     `;
-  vParams.push(params.file_name, params.origin_name);
+  vParams.push(params.board_id, params.image_name, params.origin_name);
   return await conn.query(vQuery, vParams);
 };
 

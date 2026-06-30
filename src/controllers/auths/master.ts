@@ -1,10 +1,9 @@
 import 'dotenv/config';
-import jwt from "jsonwebtoken";
 
 import getPools from "../../libs/db.ins.js";
 import { redisService } from "../../libs/redis.ins.js";
 
-import { IResult, IResultRefresh } from "../../libs/interface/result.interface.js";
+import { IResult } from "../../libs/interface/result.interface.js";
 import { moMessage } from "../../libs/modules/message.js";
 
 import { randomString } from "../../libs/modules/common.random.js"
@@ -16,11 +15,14 @@ import { sign, verify } from "../../libs/modules/auth.token.js";
 import { csEnCryptSHA512 } from "../../libs/modules/common.crypto.js";
 import { IsStatus } from "../../libs/modules/auth.status.js";
 import { IResVerify, ISignPayLoad } from '../../libs/interface/auth.interface.js';
+import { IMaster } from '../../models/masters/dto.master.js';
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || 3600; // 1h
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || 604800; // 7d
-const JWT_WALLET_EXPIRES_IN = process.env.JWT_WALLET_EXPIRES_IN || 3600; // 1h
-const JWT_WALLET_REFRESH_EXPIRES_IN = process.env.JWT_WALLET_REFRESH_EXPIRES_IN || 604800; // 7d
+
+interface IMasterAuthSession extends ISignPayLoad {
+  refreshToken: string;
+}
 
 const acIscheckEmail = async (emailid: string) => {
   let result: IResult = {
@@ -97,7 +99,7 @@ const acLogin = async (params: any) => {
       return result;
     }
 
-    const master = rows[0];
+    const master: IMaster = rows[0];
     const userSalt = master.salt;
     const statusResult = IsStatus(master.status);
 
@@ -110,7 +112,15 @@ const acLogin = async (params: any) => {
     const userPasswordHash = master.password;
     const inputPasswordHash = csEnCryptSHA512(params.password, userSalt);
 
-    if (inputPasswordHash !== userPasswordHash) {
+    if (inputPasswordHash.errCode !== 0 || !userPasswordHash) {
+      result = {
+        success: false,
+        message: "Password verification failed.",
+      };
+      return result;
+    }
+
+    if (inputPasswordHash.cryptoCode !== userPasswordHash) {
       result = {
         success: false,
         message: "Incorrect password.",
@@ -120,9 +130,9 @@ const acLogin = async (params: any) => {
 
     // 로그인 성공 create token
     const payLoad : ISignPayLoad = {
-      uid: master.master_id,
+      uid: String(master.master_id),
       id: master.emailid,
-      role: master.authority,
+      role: String(master.authority),
       deviceId: params.deviceId || "",
       deviceIp: params.deviceIp || "",
       connected_ip: params.connected_ip || "",
@@ -138,6 +148,19 @@ const acLogin = async (params: any) => {
       return result;
     }
 
+    if (!resPayLoad.refreshToken || !resPayLoad.accessToken) {
+      result = {
+        success: false,
+        message: "Failed to generate tokens.",
+      };
+      return result;
+    }
+
+    const authSession: IMasterAuthSession = {
+      ...payLoad,
+      refreshToken: resPayLoad.refreshToken,
+    };
+
     result = {
       success: true,
       message: "Login successful.",
@@ -151,8 +174,8 @@ const acLogin = async (params: any) => {
     const redis_00 = await redisService.getClient(0);
     await redis_00.set(
       `auth:master:${master.master_id}`, 
-      JSON.stringify(result.data),
-      { EX: Number(JWT_EXPIRES_IN)}
+      JSON.stringify(authSession),
+      { EX: Number(JWT_REFRESH_EXPIRES_IN)}
     ); // 세션 유효기간 24시간  
 
     // 로그인 성공으로 인한 접속 정보 기록
@@ -242,37 +265,68 @@ const acRefresh = async (params: any) => {
       return result;
     }
     
-    const authRedis = JSON.parse(redisData);
-    const payLoad = {
+    const authRedis: IMasterAuthSession = JSON.parse(redisData);
+
+    if (authRedis.refreshToken !== reToken) {
+      result = {
+        success: false,
+        message: "No matching session found. Please log in again.",
+      };
+      return result;
+    }
+
+    const payLoad: ISignPayLoad = {
       uid: authRedis.uid,
       id: authRedis.id,
       // name: authRedis.name,
       role: authRedis.role,
       // nname: authRedis.nickname,
-      connected_at: authRedis.loginTime,
-      connected_ip: authRedis.ip || "",
+      deviceId: authRedis.deviceId || "",
+      deviceIp: authRedis.deviceIp || "",
+      connected_at: authRedis.connected_at ? new Date(authRedis.connected_at) : new Date(),
+      connected_ip: authRedis.connected_ip || "",
     };
 
     // 보안상 이름은 가지고 있지 않음.
     // 필요시 닉네임, 위치, 언어 등은 회원정보로 전달
 
-    const accessToken = sign(payLoad);
-    const refreshToken = refresh(payLoad.uid);
+    const resPayLoad = sign(payLoad);
+
+    if(!resPayLoad.ok) {
+      result = {
+        success: false,
+        message: resPayLoad.message,
+      };
+      return result;
+    }
+
+    if (!resPayLoad.refreshToken || !resPayLoad.accessToken) {
+      result = {
+        success: false,
+        message: "Failed to generate tokens.",
+      };
+      return result;
+    }
+
+    const nextSession: IMasterAuthSession = {
+      ...payLoad,
+      refreshToken: resPayLoad.refreshToken,
+    };
 
     result = {
       success: true,
       message: "refreshed successfully.",
       data: {
-        accessToken: accessToken,
-        refreshToken: refreshToken,
+        accessToken: resPayLoad.accessToken,
+        refreshToken: resPayLoad.refreshToken,
       },
     };
 
     // 로그인 성공 시, Redis에 세션 정보 저장 (예: user_id와 로그인 시간)
     await redis_00.set(
-      `auth:master:${authRedis.uid}`,
-      JSON.stringify(result.data),
-      { EX: Number(JWT_EXPIRES_IN)}
+      `auth:master:${payLoad.uid}`,
+      JSON.stringify(nextSession),
+      { EX: Number(JWT_REFRESH_EXPIRES_IN)}
     ); // 세션 유효기간 24시간  
 
   } catch (error: any) {

@@ -63,16 +63,16 @@ const etList = async (conn: any, params: any) => {
   return await conn.query(vQuery, vParams);
 };
 // 상세조회
-const etDetail = async (conn: any, id: number) => {
+const etDetail = async (conn: any, code: string) => {
   var vParams = new Array();
 
   var vQuery = `
         SELECT 
           m.*
         FROM menu m
-        WHERE m.menu_id = ?
+        WHERE m.menu_code = ?
     `;
-  vParams.push(id);
+  vParams.push(code);
 
   // console.log("daoBaseLanguage etDetail vQuery", vQuery, vParams);
   return await conn.query(vQuery, vParams);
@@ -123,14 +123,14 @@ const etPatchGrant = async (conn: any, params: any) => {
   return await conn.query(vQuery, vParams);
 };
 // delete
-const etRemove = async (conn: any, id: number) => {
+const etRemove = async (conn: any, code: string) => {
   var vParams = new Array();
 
-  vParams.push(id);
+  vParams.push(code);
   var vQuery = `
         UPDATE menu
         SET is_use = CASE WHEN is_use = 1 THEN 0 ELSE 1 END
-        WHERE menu_id = ?
+        WHERE menu_code = ?
   `;
   return await conn.query(vQuery, vParams);
 };

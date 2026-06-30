@@ -25,7 +25,7 @@ const acList = async (params: any) => {
       success: true,
       message: "",
       data: reRes,
-      count: reRes.length || 0,
+      count: rowCount[0]?.count || 0,
     };
   } catch (error: any) {
     moMessage(`boardController.acList`, error?.message || error, "error");
@@ -74,7 +74,7 @@ const acSave = async (params: any) => {
   const conn = await getPools();
 
   try {
-    conn.beginTransaction();
+    await conn.beginTransaction();
 
     const reRes = await daoBoard.etSave(conn, params);
     if (reRes.affectedRows > 0) {
@@ -82,19 +82,20 @@ const acSave = async (params: any) => {
 
       // 성공적으로 저장된 경우
       // 이미지, 첨부파일정보를 저장한다.
-      params.images.forEach(async (image: any) => {
+      for (const image of params.images || []) {
+        const imageFileName = image.image_name || image.file_name;
         let reResImage = await daoBoardImage.etSave(conn, {
           board_id: insertId,
-          file_name: image.file_name,
+          image_name: imageFileName,
           origin_name: image.origin_name,
         });
 
         if (!reResImage || reResImage.affectedRows === 0) {
           throw new Error("Failed to save image data.");
-        };
-      });
+        }
+      }
 
-      params.files.forEach(async (file: any) => {
+      for (const file of params.files || []) {
         let reResFile = await daoBoardFile.etSave(conn, {
           board_id: insertId, 
           file_name: file.file_name,
@@ -102,18 +103,20 @@ const acSave = async (params: any) => {
         });
         if (!reResFile || reResFile.affectedRows === 0) {
           throw new Error("Failed to save file data.");
-        };
-      });
+        }
+      }
 
       result.success = true;
       result.message = "Data saved successfully.";
+      result.data = reRes;
+      result.count = reRes.affectedRows || 0;
     } else {
       result.message = "Failed to save data.";
     }
 
-    conn.commit();
+    await conn.commit();
   } catch (error: any) {
-    conn.rollback();
+    await conn.rollback();
     moMessage(`boardController.acSave`, error?.message || error, "error");
   } finally {
     if (conn) {
@@ -132,7 +135,7 @@ const acChange = async (params: any) => {
   const conn = await getPools();
 
   try {
-    const row = await daoBoard.etDetail(conn, params.id);
+    const row = await daoBoard.etDetail(conn, params.board_id);
     if (!row || row.length === 0) {
       result.message = "The specified board does not exist.";
       return result;
@@ -140,8 +143,12 @@ const acChange = async (params: any) => {
     
     const reRes = await daoBoard.etChange(conn, params);
     if (reRes.affectedRows > 0) {
-      result.success = true;
-      result.message = "Data updated successfully.";
+      result = {
+        success: true,
+        message: "Data updated successfully.",
+        data: reRes,
+        count: reRes.affectedRows || 0,
+      };
     } else {
       result.message = "Failed to update data.";
     }
@@ -173,8 +180,12 @@ const acRemove = async (id: number) => {
     const reRes = await daoBoard.etRemove(conn, id);
     
     if (reRes.affectedRows > 0) {
-      result.success = true;
-      result.message = "Data removed successfully.";
+      result = {
+        success: true,
+        message: "Data removed successfully.",
+        data: reRes,
+        count: reRes.affectedRows || 0,
+      };
     } else {
       result.message = "Failed to remove data.";
     }

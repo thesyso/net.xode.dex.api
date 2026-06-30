@@ -33,7 +33,7 @@ const acList = async (params: any) => {
 };
 
 // 상세조회
-const acDetail = async (id: number) => {
+const acDetail = async (code: string) => {
   let result: IResult = {
     success: false,
     message:
@@ -43,7 +43,7 @@ const acDetail = async (id: number) => {
   const conn = await getPools();
 
   try {
-    const reRes = await daoMenu.etDetail(conn, id);
+    const reRes = await daoMenu.etDetail(conn, code);
     result = {
       success: true,
       message: "",
@@ -166,7 +166,7 @@ const acPatch = async (params: any) => {
 };
 
 // 삭제
-const acRemove = async (id: number) => {
+const acRemove = async (code: string) => {
   let result: IResult = {
     success: false,
     message:
@@ -175,7 +175,7 @@ const acRemove = async (id: number) => {
 
   const conn = await getPools();
   try {
-    const reRes = await daoMenu.etRemove(conn, id);
+    const reRes = await daoMenu.etRemove(conn, code);
     result = {
       success: true,
       message: "",

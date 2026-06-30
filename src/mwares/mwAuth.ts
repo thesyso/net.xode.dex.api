@@ -2,17 +2,28 @@ import { NextFunction, Request, Response } from "express";
 import moment from "moment";
 
 import { verify, verifyAgent, verifyWallet } from "../libs/modules/auth.token";
-import { redisService } from "../libs/redis.ins";
 import { IResVerify, IResVerifyWallet } from "../libs/interface/auth.interface";
-import { EnumWalletChain } from "../libs/interface/wallet.interface";
+
+const MASTER_PRIVATE_MIN_AUTHORITY = Number(process.env.MASTER_PRIVATE_MIN_AUTHORITY || 5);
 
 export const mwMemberAuthJWT = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ) => {
-  if (req.headers.authorization) {
-    const accessToken = req.headers.authorization.split("Bearer ")[1]; // header에서 access token을 가져옵니다.
+  const authorization = req.headers.authorization;
+  if (authorization) {
+    const accessToken = authorization.startsWith("Bearer ")
+      ? authorization.slice("Bearer ".length).trim()
+      : "";
+
+    if (!accessToken) {
+      return res.status(403).send({
+        errCode: 403,
+        errMessage: "no authentication information.",
+      });
+    }
+
     const resVerify: IResVerify = verify(accessToken, "access"); // token을 검증합니다.
 
     if (resVerify.ok) {
@@ -21,6 +32,7 @@ export const mwMemberAuthJWT = async (
         ...resVerify,
         nation: "ko"
       };
+      req.masterAuth = req.memberAuth;
 
       // var resRedis = await redisV4.get(userInfo.uid.toString());
 
@@ -41,19 +53,45 @@ export const mwMemberAuthJWT = async (
       //         errMessage: 'no authentication information.',
       //     });
       // }
+      return next();
     } else {
       // 검증에 실패하거나 토큰이 만료되었다면 클라이언트에게 메세지를 담아서 응답합니다.
-      res.status(401).send({
+      return res.status(401).send({
         errCode: 401,
         errMessage: "Authentication has expired.", // jwt가 만료되었다면 메세지는 'jwt expired'입니다.
       });
     }
   } else {
-    res.status(403).send({
+    return res.status(403).send({
       errCode: 403,
-      errMessage: "no authentication information.",
+      errMessage: "You do not have access to this page.",
     });
   }
+};
+
+export const mwMasterPrivateAuthJWT = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const masterAuth = req.memberAuth || req.masterAuth;
+
+  if (!masterAuth) {
+    return res.status(403).send({
+      errCode: 403,
+      errMessage: "You do not have access to this page.",
+    });
+  }
+
+  const authority = Number(masterAuth.role || 0);
+  if (Number.isNaN(authority) || authority < MASTER_PRIVATE_MIN_AUTHORITY) {
+    return res.status(403).send({
+      errCode: 403,
+      errMessage: "Your administrator account does not have permission to access this resource.",
+    });
+  }
+
+  return next();
 };
 
 export const mwWalletAuthJWT = async (

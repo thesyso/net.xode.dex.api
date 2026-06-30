@@ -15,21 +15,13 @@ const etList = async (conn: any, params: any) => {
   var srBeginDate = !isNaN(params.srBeginDate) && params.srBeginDate ? new Date(params.srBeginDate) : null;
   var srEndDate = !isNaN(params.srEndDate) && params.srEndDate ? new Date(params.srEndDate) : null;
 
-  //
-  var srUsed = params.srUsed ? params.srUsed : "";
-
   var vQuery = `
         SELECT SQL_CALC_FOUND_ROWS 
           bh.*
         FROM board_hit bh
     `;
 
-  if (srUsed) {
-    vParams.push(srUsed);
-    vQuery = vQuery + ` WHERE bh.is_use = ?`;
-  } else {
-    vQuery = vQuery + ` WHERE 1 = 1`;
-  }
+  vQuery = vQuery + ` WHERE 1 = 1`;
 
   // where : sr srtxt
   if (sr != 0 && srTxt.length > 0) {
@@ -55,7 +47,7 @@ const etList = async (conn: any, params: any) => {
     vQuery = vQuery + ` AND bh.created_at < DATE_ADD(DATE_FORMAT(?,'%Y-%m-%d'), INTERVAL 1 DAY)`;
   }
 
-  vQuery = vQuery + ` ORDER BY bh.hit_id DESC `;
+  vQuery = vQuery + ` ORDER BY bh.hits_id DESC `;
 
   // paging
   vParams.push(pageBegin, pageRow);
@@ -70,7 +62,7 @@ const etDetail = async (conn: any, id: number) => {
         SELECT 
           bh.*
         FROM board_hit bh
-        WHERE bh.hit_id = ?
+        WHERE bh.hits_id = ?
     `;
   vParams.push(id);
 
@@ -83,9 +75,8 @@ const etSave = async (conn: any, params: any) => {
   var vQuery = `
         INSERT INTO board_hit (
           board_id,
-          wallet_id,
-          is_use
-        ) VALUES (?, ?, 1)
+          wallet_id
+        ) VALUES (?, ?)
     `;
   vParams.push(params.board_id, params.wallet_id);
   return await conn.query(vQuery, vParams);
@@ -99,9 +90,8 @@ const etRemove = async (conn: any, id: number) => {
   var vParams = new Array();
 
   var vQuery = `
-        UPDATE board_hit SET
-        is_use = (CASE WHEN is_use = 1 THEN 0 ELSE 1 END)
-        WHERE hit_id = ?
+  DELETE FROM board_hit
+  WHERE hits_id = ?
         `;
 
   vParams.push(id);

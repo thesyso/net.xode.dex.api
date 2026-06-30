@@ -112,3 +112,10 @@ const acRemove = async (id: number) => {
   }
   return result;
 };
+
+export default {
+  acList,
+  acDetail,
+  acSave,
+  acRemove,
+};

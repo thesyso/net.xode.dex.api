@@ -83,7 +83,7 @@ const acSave = async (params: any) => {
   return result;
 };
 
-const acRemove = async (params: any) => {
+const acRemove = async (id: number) => {
   let result: IResult = {
     success: false,
     message: "an unknown error has occurred. If this continues, please contact your administrator."
@@ -91,7 +91,7 @@ const acRemove = async (params: any) => {
 
   const conn = await getPools();
   try {
-    const reRes = await daoBoardFavorite.etRemove(conn, params);
+    const reRes = await daoBoardFavorite.etRemove(conn, id);
     result = {
       success: true,
       message: "",
