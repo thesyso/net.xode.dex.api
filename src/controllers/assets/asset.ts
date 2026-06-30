@@ -94,7 +94,7 @@ const acSave = async (params: any) => {
     result.success = true;
     result.message = "";
     result.data = rows;
-    result.count = conn.affectedRows || 0;
+    result.count = rows.affectedRows || 0;
 
   } catch (error: any) {
     moMessage(
@@ -135,7 +135,7 @@ const acChange = async (params: any) => {
     result.success = true;
     result.message = "";
     result.data = rows;
-    result.count = conn.affectedRows || 0;
+    result.count = rows.affectedRows || 0;
 
   } catch (error: any) {
     moMessage(
@@ -175,7 +175,7 @@ const acPatchStatus = async (params: any) => {
     result.success = true;
     result.message = "";
     result.data = rows;
-    result.count = conn.affectedRows || 0;
+    result.count = rows.affectedRows || 0;
   } catch (error: any) {
     moMessage(
       `assetController.acPatchStatus`,
@@ -214,8 +214,11 @@ const acRemove = async (asset_id: string, asset_node: string) => {
     if (rows.affectedRows > 0) {
       result.success = true;
       result.message = "Data removed successfully.";
+      result.data = rows;
+      result.count = rows.affectedRows || 0;
     } else {
       result.message = "Failed to remove data.";
+      result.count = 0;
     }
 
   } catch (error: any) {

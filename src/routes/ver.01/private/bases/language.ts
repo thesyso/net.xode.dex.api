@@ -1,5 +1,5 @@
 import express from "express";
-import LanguageController from "../../../../controllers/bases/language";
+import languageController from "../../../../controllers/bases/language";
 import { IResult } from "../../../../libs/interface/result.interface";
 
 const router = express.Router();
@@ -28,32 +28,32 @@ const getParams = (query: any) => {
 
 router.get("/", async (req, res) => {
   let sParams = getParams(req.query);
-  const result = await LanguageController.acList(sParams);
+  const result = await languageController.acList(sParams);
   res.status(200).json(result);
 });
 
 router.get("/:id", async (req, res) => {
   let ucode = req.params.id;
   console.log(`Requested language code: ${ucode}`);
-  const result = await LanguageController.acDetail(ucode);
+  const result = await languageController.acDetail(ucode);
   res.status(200).json(result);
 });
 
 router.post("/", async (req, res) => {
   const params = req.body;
-  const result = await LanguageController.acSave(params);
+  const result = await languageController.acSave(params);
   res.status(200).json(result);
 });
 
 router.put("/", async (req, res) => {
   const params = req.body;
-  const result = await LanguageController.acChange(params);
+  const result = await languageController.acChange(params);
   res.status(200).json(result);
 });
 
 router.delete("/:id", async (req, res) => {
   const ucode = req.params.id;
-  const result = await LanguageController.acRemove(ucode);
+  const result = await languageController.acRemove(ucode);
   res.status(200).json(result);
 });
 
